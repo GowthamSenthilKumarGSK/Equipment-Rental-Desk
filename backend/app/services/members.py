@@ -10,6 +10,7 @@ from app.domain.enums import BlockReason, LoanStatus, MemberStatus
 from app.domain.errors import DeletionBlocked, EntityNotFound, InvalidTransition
 from app.domain.rules import (
     effective_loan_status,
+    has_reached_loan_limit,
     is_overdue,
     late_fee_days,
     member_block_reasons,
@@ -177,6 +178,7 @@ class MemberService:
                 active_loan_count=standing.active_loan_count,
                 longest_overdue=standing.longest_overdue,
                 block_reasons=self._block_reasons(member, standing),
+                at_loan_limit=has_reached_loan_limit(standing.active_loan_count),
                 loans=statement_loans,
                 payments=payments,
             )
@@ -210,4 +212,5 @@ class MemberService:
             balance_paise=standing.balance_paise,
             active_loan_count=standing.active_loan_count,
             block_reasons=self._block_reasons(member, standing),
+            at_loan_limit=has_reached_loan_limit(standing.active_loan_count),
         )

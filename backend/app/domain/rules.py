@@ -215,6 +215,37 @@ def next_item_status(
         ) from None
 
 
+# What staff can ask for, in the order a UI would list it. EXPIRE_RESERVATION is automatic.
+_STAFF_ITEM_ACTIONS = (
+    ItemAction.RESERVE,
+    ItemAction.CHECK_OUT,
+    ItemAction.RETURN,
+    ItemAction.CANCEL_RESERVATION,
+    ItemAction.START_MAINTENANCE,
+    ItemAction.FINISH_MAINTENANCE,
+)
+
+
+def allowed_item_actions(current: ItemStatus, *, has_open_loan: bool) -> list[ItemAction]:
+    """The actions that make sense for an item right now, so a UI never has to know the rules.
+
+    `current` is the effective status. `has_open_loan` means a member currently holds the item
+    (a checked-out loan), which matters for items under maintenance: they can only be returned,
+    not released, until the member brings them back. This answers "which buttons?" for the item
+    only; whether a particular member may borrow it is decided when the action is attempted.
+    """
+    allowed = []
+    for action in _STAFF_ITEM_ACTIONS:
+        if action is ItemAction.RETURN and not has_open_loan:
+            continue  # the table lets a maintenance item be "returned", but only if it is out
+        try:
+            next_item_status(current, action, has_open_loan=has_open_loan)
+        except InvalidTransition:
+            continue
+        allowed.append(action)
+    return allowed
+
+
 def next_loan_status(current: LoanStatus, action: LoanAction) -> LoanStatus:
     """Loan state machine: RESERVED -> CHECKED_OUT | CANCELLED | EXPIRED; CHECKED_OUT -> RETURNED.
 
@@ -269,12 +300,22 @@ def ensure_member_can_transact(
         raise MemberBlocked(reasons)
 
 
+def has_reached_loan_limit(active_loan_count: int) -> bool:
+    """True when the member holds 3 or more active loans, so cannot reserve another (A15).
+
+    This is not a block reason: it stops reserving only, not checking out a reservation the member
+    already holds. Callers must count only RESERVED and CHECKED_OUT loans whose reservation has not
+    expired.
+    """
+    return active_loan_count >= MAX_ACTIVE_LOANS
+
+
 def ensure_within_loan_limit(active_loan_count: int) -> None:
     """Raise LoanLimitExceeded if the member already has 3 or more active loans.
 
     Callers must count only RESERVED and CHECKED_OUT loans whose reservation has not expired.
     """
-    if active_loan_count >= MAX_ACTIVE_LOANS:
+    if has_reached_loan_limit(active_loan_count):
         raise LoanLimitExceeded(
             f"Member already has {active_loan_count} active loans (maximum {MAX_ACTIVE_LOANS})"
         )

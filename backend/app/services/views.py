@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import timedelta
 
-from app.domain.enums import BlockReason, ItemStatus, LoanStatus
+from app.domain.enums import BlockReason, ItemAction, ItemStatus, LoanStatus
 from app.models import Item, Loan, Member, Payment
 
 
@@ -20,6 +20,7 @@ class ItemView:
     item: Item
     status: ItemStatus  # as of now: a lapsed reservation reads as available, a late loan as overdue
     current_loan: Loan | None  # the reserved or checked-out loan, if any
+    allowed_actions: list[ItemAction]  # what staff can do with the item right now
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,7 @@ class MemberView:
     balance_paise: int
     active_loan_count: int
     block_reasons: list[BlockReason]  # empty when the member may reserve and check out
+    at_loan_limit: bool  # cannot reserve another item (check-out of a held reservation is fine)
 
 
 @dataclass(frozen=True)
@@ -48,6 +50,7 @@ class Statement:
     active_loan_count: int
     longest_overdue: timedelta | None
     block_reasons: list[BlockReason]
+    at_loan_limit: bool
     loans: list[StatementLoan]
     payments: list[Payment]
 

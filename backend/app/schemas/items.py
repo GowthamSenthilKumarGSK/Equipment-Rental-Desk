@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import Field, StringConstraints, model_validator
 
-from app.domain.enums import ItemStatus
+from app.domain.enums import ItemAction, ItemStatus
 from app.schemas.common import NoNul, Paise, RequestModel, ResponseModel
 from app.schemas.loans import LoanRead
 from app.services.views import ItemView
@@ -54,6 +54,11 @@ class ItemRead(ResponseModel):
         description="As of now: a lapsed reservation reads as available, a late loan as overdue"
     )
     current_loan: LoanRead | None = Field(description="The reserved or checked-out loan, if any")
+    allowed_actions: list[ItemAction] = Field(
+        description="What staff can do with the item right now, so a UI offers only valid actions. "
+        "`reserve` still depends on the member being allowed to borrow, which is checked when "
+        "it is attempted."
+    )
 
     @classmethod
     def from_view(cls, view: ItemView) -> "ItemRead":
@@ -66,4 +71,5 @@ class ItemRead(ResponseModel):
             condition_note=item.condition_note,
             status=view.status,
             current_loan=LoanRead.from_loan(view.current_loan) if view.current_loan else None,
+            allowed_actions=view.allowed_actions,
         )

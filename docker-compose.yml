@@ -37,6 +37,7 @@ services:
       context: ./frontend
       args:
         VITE_API_URL: http://localhost:8000
+        VITE_ENABLE_TEST_CLOCK: ${VITE_ENABLE_TEST_CLOCK:-false}
     ports:
       - "8080:80"
     depends_on:

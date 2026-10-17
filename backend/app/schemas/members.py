@@ -64,6 +64,11 @@ class MemberDetail(MemberRead):
     block_reasons: list[BlockReason] = Field(
         description="Why the member cannot reserve or check out right now; empty if they can"
     )
+    at_loan_limit: bool = Field(
+        description="True when the member already holds the maximum number of active loans and "
+        "so cannot reserve another. Not a block reason: checking out a reservation they hold "
+        "is still allowed."
+    )
 
     @classmethod
     def from_view(cls, view: MemberView) -> "MemberDetail":
@@ -77,6 +82,7 @@ class MemberDetail(MemberRead):
             balance_paise=view.balance_paise,
             active_loan_count=view.active_loan_count,
             block_reasons=view.block_reasons,
+            at_loan_limit=view.at_loan_limit,
         )
 
 
@@ -103,6 +109,9 @@ class StatementRead(ResponseModel):
     total_payments_paise: int
     active_loan_count: int
     block_reasons: list[BlockReason]
+    at_loan_limit: bool = Field(
+        description="True when the member cannot reserve another item because of the loan limit"
+    )
     loans: list[StatementLoanRead] = Field(description="Newest first")
     payments: list[PaymentRead] = Field(description="Newest first")
 
@@ -115,6 +124,7 @@ class StatementRead(ResponseModel):
             total_payments_paise=statement.total_payments_paise,
             active_loan_count=statement.active_loan_count,
             block_reasons=statement.block_reasons,
+            at_loan_limit=statement.at_loan_limit,
             loans=[
                 StatementLoanRead(
                     loan=LoanRead.from_loan(row.loan),

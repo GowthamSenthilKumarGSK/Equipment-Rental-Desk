@@ -1,13 +1,20 @@
 """Item use cases that are not loans: catalogue (create, read, update, delete) and maintenance."""
 
+from datetime import datetime
+
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.clock import Clock
 from app.db import transaction
 from app.domain.enums import ItemAction, ItemStatus, LoanAction, LoanStatus
 from app.domain.errors import DeletionBlocked, EntityNotFound
-from app.domain.rules import next_item_status, next_loan_status
-from app.models import Item
+from app.domain.rules import (
+    allowed_item_actions,
+    effective_loan_status,
+    next_item_status,
+    next_loan_status,
+)
+from app.models import Item, Loan
 from app.repositories import items as items_repo
 from app.repositories import loans as loans_repo
 from app.services.support import (
@@ -17,6 +24,29 @@ from app.services.support import (
     require_not_before,
 )
 from app.services.views import ItemView, Page
+
+
+def item_view(item: Item, loan: Loan | None, now: datetime) -> ItemView:
+    """An item as it should be shown at `now`: its status, loan and the actions available.
+
+    A reservation whose hold has lapsed is shown the way the member statement shows it: it is no
+    longer the item's current loan (the item reads as available). The stored row is left alone and
+    still appears, as expired, in the member's history; the next write on the item persists that.
+    """
+    status = current_item_status(item, loan, now)
+    if (
+        loan is not None
+        and effective_loan_status(loan.status, reserved_at=loan.reserved_at, now=now)
+        is LoanStatus.EXPIRED
+    ):
+        loan = None
+    holds_item = loan is not None and loan.status is LoanStatus.CHECKED_OUT
+    return ItemView(
+        item=item,
+        status=status,
+        current_loan=loan,
+        allowed_actions=allowed_item_actions(status, has_open_loan=holds_item),
+    )
 
 
 class ItemService:
@@ -39,7 +69,7 @@ class ItemService:
                 status=ItemStatus.AVAILABLE,
             )
             items_repo.add(session, item)
-            return ItemView(item=item, status=ItemStatus.AVAILABLE, current_loan=None)
+            return item_view(item, None, self._clock.now())
 
     def get_item(self, item_id: int) -> ItemView:
         now = self._clock.now()
@@ -48,7 +78,7 @@ class ItemService:
             if item is None:
                 raise EntityNotFound(f"Item {item_id} not found")
             loan = loans_repo.active_for_item(session, item_id)
-            return ItemView(item, current_item_status(item, loan, now), loan)
+            return item_view(item, loan, now)
 
     def list_items(
         self,
@@ -68,9 +98,7 @@ class ItemService:
         now = self._clock.now()
         with transaction(self._session_factory) as session:
             rows = items_repo.find_with_active_loan(session, category=category, search=search)
-            views = [
-                ItemView(item, current_item_status(item, loan, now), loan) for item, loan in rows
-            ]
+            views = [item_view(item, loan, now) for item, loan in rows]
             if status is not None:
                 views = [view for view in views if view.status is status]
             return Page(items=views[offset : offset + limit], total=len(views))
@@ -103,7 +131,7 @@ class ItemService:
                     setattr(item, field, value)
             session.flush()
             loan = loans_repo.active_for_item(session, item_id)
-            return ItemView(item, current_item_status(item, loan, now), loan)
+            return item_view(item, loan, now)
 
     def delete_item(self, *, item_id: int) -> None:
         """Remove an item that has never been reserved or lent. Items with history cannot go."""
