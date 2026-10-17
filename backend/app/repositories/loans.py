@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.domain.enums import ACTIVE_LOAN_STATUSES, LoanStatus
 from app.models import Loan
@@ -43,3 +43,32 @@ def reserved_before(session: Session, cutoff: datetime, item_id: int | None = No
     if item_id is not None:
         statement = statement.where(Loan.item_id == item_id)
     return list(session.scalars(statement))
+
+
+def for_member(session: Session, member_id: int) -> list[Loan]:
+    """Every loan the member has had, newest first, with the item loaded."""
+    statement = (
+        sa.select(Loan)
+        .where(Loan.member_id == member_id)
+        .options(joinedload(Loan.item))
+        .order_by(Loan.reserved_at.desc(), Loan.id.desc())
+    )
+    return list(session.scalars(statement))
+
+
+def overdue(session: Session, now: datetime, limit: int, offset: int) -> tuple[list[Loan], int]:
+    """One page of checked-out loans past their due time (oldest due first) and the total.
+
+    `due_at < now` is the same test as `rules.is_overdue`: exactly at the due time is still on time.
+    """
+    condition = sa.and_(Loan.status == LoanStatus.CHECKED_OUT, Loan.due_at < now)
+    total = session.scalar(sa.select(sa.func.count()).select_from(Loan).where(condition))
+    page = (
+        sa.select(Loan)
+        .where(condition)
+        .options(joinedload(Loan.member), joinedload(Loan.item))
+        .order_by(Loan.due_at, Loan.id)
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(session.scalars(page).unique()), total

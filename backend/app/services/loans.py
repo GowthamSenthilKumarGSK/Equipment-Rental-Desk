@@ -21,6 +21,7 @@ from app.domain.rules import (
     calculate_late_fee_paise,
     ensure_member_can_transact,
     ensure_within_loan_limit,
+    late_fee_days,
     loan_due_at,
     next_item_status,
     next_loan_status,
@@ -37,6 +38,7 @@ from app.services.support import (
     member_standing,
     require_not_before,
 )
+from app.services.views import OverdueLoan, Page
 
 
 def _is_active_loan_conflict(error: IntegrityError) -> bool:
@@ -188,6 +190,26 @@ class LoanService:
         loan.cancelled_at = now
         items_repo.set_status(session, item, new_item_status)
         return loan
+
+    def overdue_loans(self, *, limit: int, offset: int) -> Page[OverdueLoan]:
+        """Checked-out loans past their due time, longest overdue first, with the fee so far."""
+        now = self._clock.now()
+        with transaction(self._session_factory) as session:
+            loans, total = loans_repo.overdue(session, now, limit, offset)
+            rows = [
+                OverdueLoan(
+                    loan=loan,
+                    member_name=loan.member.name,
+                    member_phone=loan.member.phone,
+                    item_name=loan.item.name,
+                    days_overdue=late_fee_days(loan.due_at, now),
+                    fee_if_returned_now_paise=calculate_late_fee_paise(
+                        loan.due_at, now, loan.item.replacement_value_paise
+                    ),
+                )
+                for loan in loans
+            ]
+            return Page(items=rows, total=total)
 
     def expire_stale_reservations(self) -> int:
         """Save the expiry of every lapsed reservation now (writes on an item also do this)."""

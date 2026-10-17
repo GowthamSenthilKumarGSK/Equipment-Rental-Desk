@@ -16,6 +16,11 @@ services:
         sync: false # set in the Render dashboard to the Vercel URL
       - key: LOG_LEVEL
         value: INFO
+      # Reviewer test clock. "true" lets anyone who can reach the API send X-Test-Clock (the API has
+      # no authentication), so set it to "false" and redeploy once the review is over. A value set
+      # only in the dashboard is overwritten the next time this blueprint is synced.
+      - key: ALLOW_TEST_CLOCK
+        value: "true"
 
 databases:
   - name: rental-desk-db

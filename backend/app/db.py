@@ -13,7 +13,10 @@ from app.config import get_settings
 
 
 def make_engine(url: str | None = None) -> sa.Engine:
-    engine = sa.create_engine(url or get_settings().sqlalchemy_url, pool_pre_ping=True)
+    # hide_parameters keeps bound values (names, phone numbers) out of database error messages.
+    engine = sa.create_engine(
+        url or get_settings().sqlalchemy_url, pool_pre_ping=True, hide_parameters=True
+    )
     if engine.dialect.name == "sqlite":
         sa.event.listen(engine, "connect", _configure_sqlite_connection)
         sa.event.listen(engine, "begin", _begin_sqlite_immediately)

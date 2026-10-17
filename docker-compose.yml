@@ -24,6 +24,8 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-rental}:${POSTGRES_PASSWORD:-rental}@db:5432/${POSTGRES_DB:-rental_desk}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Reviewer test clock (X-Test-Clock header). Set ALLOW_TEST_CLOCK=false in .env to refuse it.
+      ALLOW_TEST_CLOCK: ${ALLOW_TEST_CLOCK:-true}
     ports:
       - "8000:8000"
     depends_on:

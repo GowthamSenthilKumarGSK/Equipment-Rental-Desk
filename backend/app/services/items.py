@@ -1,11 +1,11 @@
-"""Item use cases that are not loans: reading the live status, and maintenance."""
+"""Item use cases that are not loans: catalogue (create, read, update, delete) and maintenance."""
 
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.clock import Clock
 from app.db import transaction
 from app.domain.enums import ItemAction, ItemStatus, LoanAction, LoanStatus
-from app.domain.errors import EntityNotFound
+from app.domain.errors import DeletionBlocked, EntityNotFound
 from app.domain.rules import next_item_status, next_loan_status
 from app.models import Item
 from app.repositories import items as items_repo
@@ -16,6 +16,7 @@ from app.services.support import (
     locked_item,
     require_not_before,
 )
+from app.services.views import ItemView, Page
 
 
 class ItemService:
@@ -23,17 +24,106 @@ class ItemService:
         self._session_factory = session_factory
         self._clock = clock
 
-    def item_status(self, item_id: int) -> ItemStatus:
-        """The status to show now: a lapsed reservation reads as available, a late loan as overdue.
+    # --- catalogue ---------------------------------------------------------------------------
 
-        This only reads; the database row is left as it is until the next write on the item.
-        """
+    def create_item(
+        self, *, name: str, category: str, replacement_value_paise: int, condition_note: str = ""
+    ) -> ItemView:
+        """Add an item to the library. It starts out available."""
+        with transaction(self._session_factory) as session:
+            item = Item(
+                name=name,
+                category=category,
+                replacement_value_paise=replacement_value_paise,
+                condition_note=condition_note,
+                status=ItemStatus.AVAILABLE,
+            )
+            items_repo.add(session, item)
+            return ItemView(item=item, status=ItemStatus.AVAILABLE, current_loan=None)
+
+    def get_item(self, item_id: int) -> ItemView:
         now = self._clock.now()
         with transaction(self._session_factory) as session:
             item = items_repo.get(session, item_id)
             if item is None:
                 raise EntityNotFound(f"Item {item_id} not found")
-            return current_item_status(item, loans_repo.active_for_item(session, item_id), now)
+            loan = loans_repo.active_for_item(session, item_id)
+            return ItemView(item, current_item_status(item, loan, now), loan)
+
+    def list_items(
+        self,
+        *,
+        status: ItemStatus | None = None,
+        category: str | None = None,
+        search: str | None = None,
+        limit: int,
+        offset: int,
+    ) -> Page[ItemView]:
+        """One page of items. `status` is the status as of now, so it can be OVERDUE.
+
+        The status filter is applied here with the domain rule rather than in SQL, so a lapsed
+        reservation or a late loan is judged exactly as everywhere else. That means filtering by
+        status reads every item matching the other filters; fine for a library, not for millions.
+        """
+        now = self._clock.now()
+        with transaction(self._session_factory) as session:
+            rows = items_repo.find_with_active_loan(session, category=category, search=search)
+            views = [
+                ItemView(item, current_item_status(item, loan, now), loan) for item, loan in rows
+            ]
+            if status is not None:
+                views = [view for view in views if view.status is status]
+            return Page(items=views[offset : offset + limit], total=len(views))
+
+    def update_item(
+        self,
+        *,
+        item_id: int,
+        name: str | None = None,
+        category: str | None = None,
+        replacement_value_paise: int | None = None,
+        condition_note: str | None = None,
+    ) -> ItemView:
+        """Change an item's details. Only the arguments given (not None) are changed.
+
+        The item's state is not editable here; it moves only through reserve, check out, return
+        and maintenance.
+        """
+        now = self._clock.now()
+        with transaction(self._session_factory) as session:
+            item = locked_item(session, item_id)
+            changes = {
+                "name": name,
+                "category": category,
+                "replacement_value_paise": replacement_value_paise,
+                "condition_note": condition_note,
+            }
+            for field, value in changes.items():
+                if value is not None:
+                    setattr(item, field, value)
+            session.flush()
+            loan = loans_repo.active_for_item(session, item_id)
+            return ItemView(item, current_item_status(item, loan, now), loan)
+
+    def delete_item(self, *, item_id: int) -> None:
+        """Remove an item that has never been reserved or lent. Items with history cannot go."""
+        with transaction(self._session_factory) as session:
+            item = locked_item(session, item_id)
+            if items_repo.has_loans(session, item_id):
+                raise DeletionBlocked(
+                    f"Item {item_id} has loan history and cannot be deleted; "
+                    "put it under maintenance to take it out of use"
+                )
+            items_repo.delete(session, item)
+
+    # --- status and maintenance --------------------------------------------------------------
+
+    def item_status(self, item_id: int) -> ItemStatus:
+        """The status to show now: a lapsed reservation reads as available, a late loan as overdue.
+
+        This only reads; the database row is left as it is until the next write on the item.
+        """
+        return self.get_item(item_id).status
 
     def start_maintenance(self, *, item_id: int) -> Item:
         """Take an item out of circulation, from any state except already under maintenance.
