@@ -88,6 +88,7 @@ def test_get_member_includes_balance_and_block_reasons(api):
         "balance_paise": 0,
         "active_loan_count": 0,
         "block_reasons": [],
+        "at_loan_limit": False,
     }
 
 

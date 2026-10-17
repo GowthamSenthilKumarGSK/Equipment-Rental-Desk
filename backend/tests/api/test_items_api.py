@@ -23,6 +23,7 @@ def test_create_item_starts_available(api):
         "condition_note": "",
         "status": "available",
         "current_loan": None,
+        "allowed_actions": ["reserve", "start_maintenance"],
     }
 
 

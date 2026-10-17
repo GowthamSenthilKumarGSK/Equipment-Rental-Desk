@@ -1,6 +1,6 @@
 # Equipment Rental Desk
 
-> **Status: M3 (REST API).** The database, business rules, services and the HTTP API (members, items, reservations, check-out, return, payments, statements, overdue list, reviewer test clock) are implemented and tested. The UI (M4) and deployment (M5) do not exist yet. Sections marked _TBD (Mx)_ are filled in as the milestones land. Nothing below claims a feature that is not built yet.
+> **Status: M4 (UI).** The database, business rules, services, the HTTP API (members, items, reservations, check-out, return, payments, statements, overdue list, reviewer test clock) and the React UI over that API (item catalogue and actions, member accounts and payments, overdue dashboard) are implemented and tested. Deployment (M5) does not exist yet. Sections marked _TBD (Mx)_ are filled in as the milestones land. Nothing below claims a feature that is not built yet.
 
 ## 1. Title and one-liner
 
@@ -16,8 +16,8 @@ _TBD (M5)._ UI URL, API base URL and API docs URL (`<api>/docs`) will be listed 
 | ---------- | --------------------------------------------------------- | ----------------- |
 | Backend    | Python, FastAPI, SQLAlchemy 2, Alembic, Pydantic Settings | Render (Docker)   |
 | Database   | PostgreSQL 16                                             | Render Postgres   |
-| Frontend   | React 19, TypeScript, Vite                                | Vercel            |
-| Tests      | pytest, pytest-cov, httpx (FastAPI TestClient)            | GitHub Actions    |
+| Frontend   | React 19, TypeScript, Vite, react-router-dom              | Vercel            |
+| Tests      | pytest, pytest-cov, httpx (backend); Vitest + Testing Library (frontend) | GitHub Actions    |
 | Lint/Style | Ruff (backend), ESLint + Prettier (frontend)              |                   |
 | Local      | Docker Compose                                            |                   |
 
@@ -46,6 +46,14 @@ backend/            FastAPI app, Alembic migrations, tests
   alembic/          Database migrations
   tests/            pytest suite (tests/domain = rules, tests/db = schema, migration, seed)
 frontend/           React + TypeScript UI (Vite); contains no business rules
+  src/api.ts        The only place that calls the API: one function per endpoint, ApiError
+  src/pages/        Items, item detail, members, member account, overdue
+  src/components/   Layout, forms, member picker, badges, notices, reviewer test clock
+  src/messages.ts   Wording for error codes, labels and block reasons (text only)
+  src/format.ts     Rupee and IST formatting; parsing of typed amounts
+  src/paging.ts     Page arithmetic (is this page past the end, where is the last one)
+  src/useAsync.ts   Loading/error/reload hook used by every page
+  src/test/         Vitest setup and helpers that stub the network (tests only)
 docker-compose.yml  Postgres + backend + frontend for local bring-up
 render.yaml         Render blueprint (API + database)
 ```
@@ -61,7 +69,7 @@ members 1──* payments
 ```
 
 - **Money** is integer paise everywhere (`replacement_value_paise`, `fee_charged_paise`, `amount_paise`); there are no floats or decimals. ₹10 = 1000.
-- **Timestamps** are stored as UTC (`timestamptz` on PostgreSQL). `UtcDateTime` (`app/models/types.py`) rejects naive datetimes and returns aware UTC on both PostgreSQL and SQLite. The UI will show IST.
+- **Timestamps** are stored as UTC (`timestamptz` on PostgreSQL). `UtcDateTime` (`app/models/types.py`) rejects naive datetimes and returns aware UTC on both PostgreSQL and SQLite. The UI shows IST.
 - **Balance is derived, not stored:** `SUM(loans.fee_charged_paise) - SUM(payments.amount_paise)` per member. It cannot drift from the ledger rows, at the cost of a query per read.
 - **Overdue is derived, never stored:** a loan is overdue when `status = 'checked_out'` and `now > due_at`. Both `items.status` and `loans.status` have CHECK constraints that reject `'overdue'`.
 - **Item status is stored** (`available`, `reserved`, `checked_out`, `under_maintenance`) because staff set maintenance and the UI filters by status. This duplicates what the open loan implies, so every service updates item and loan in the same transaction.
@@ -93,7 +101,9 @@ The 3-active-loan limit, the ₹100 balance limit and the 14-day overdue limit d
 
 - Root `.env` (copy from `.env.example`): `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` configure the compose database; `DATABASE_URL` is used when the backend runs on your machine; `CORS_ORIGINS` is a comma-separated list of allowed browser origins; `LOG_LEVEL`; `ALLOW_TEST_CLOCK` (default `true`) lets requests set "now" with the `X-Test-Clock` header (see section 10).
 - The `rental` / `rental` Postgres credentials in `.env.example` and `docker-compose.yml` are **local-development defaults only**. Hosted environments must supply `DATABASE_URL` from the provider's environment configuration; no production credentials are stored in this repo.
-- `frontend/.env` (copy from `frontend/.env.example`): `VITE_API_URL`, the backend base URL, read at build/dev time.
+- `frontend/.env` (copy from `frontend/.env.example`), both read by Vite at dev/build time (they are baked into the built files, so changing them needs a rebuild):
+  - `VITE_API_URL`: the backend base URL, no trailing slash (default `http://localhost:8000`). Every request goes there; the footer of the UI shows it. The backend's `CORS_ORIGINS` must include the origin the UI is served from (`http://localhost:5173` for `npm run dev`, `http://localhost:8080` for Compose).
+  - `VITE_ENABLE_TEST_CLOCK`: unset or anything other than `true` means the reviewer test clock panel does not exist in the UI and the `X-Test-Clock` header is never sent. Set `true` only for a review build (section 10). Docker Compose passes it through from your shell or `.env`, default `false`.
 
 **Backend** (PowerShell; on macOS/Linux use `source .venv/bin/activate`)
 
@@ -117,7 +127,9 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:5173>.
+Open <http://localhost:5173>. The UI needs the API running (and seeded, below) to show anything; with the API down every page shows a "Can't reach the server" message with a "Try again" button.
+
+Other frontend commands: `npm test` (Vitest, one run), `npm run test:watch`, `npm run lint`, `npm run format:check`, `npm run build` (type-checks, then builds to `dist/`), `npm run preview` (serves the build).
 
 **Database, migrate, seed**
 
@@ -143,7 +155,7 @@ cd backend
 pytest
 ```
 
-`pytest` is configured (in `backend/pyproject.toml`) to print a coverage report on every run. Lint and format checks: `ruff check .` and `ruff format --check .`. Frontend: `npm run lint`, `npm run format:check`, `npm run build`.
+`pytest` is configured (in `backend/pyproject.toml`) to print a coverage report on every run. Lint and format checks: `ruff check .` and `ruff format --check .`. Frontend (from `frontend/`): `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm test`, `npm run build`.
 
 **Which database the tests use.** By default the DB tests run on a throwaway SQLite file, so nothing needs to be installed. To run the same tests on PostgreSQL, create a database whose name contains `test` and set `TEST_DATABASE_URL` in your shell (the fixtures drop all tables there, so they refuse any other name):
 
@@ -155,13 +167,13 @@ pytest
 
 The schema in tests always comes from the Alembic migration (never `create_all`), and `tests/db/test_migrations.py` fails if the models and the migration drift apart.
 
-**What the tests cover (end of M3: 688 passed, 0 skipped, 0 expected failures).**
+**What the backend tests cover (after the M4 review fixes: 773 passed, 0 skipped, 0 expected failures; the counts below are from that run).**
 
 | Folder | Tests | What it checks |
 | --- | --- | --- |
-| `tests/domain/` | 196 | The pure rules in `app/domain`: every boundary (47h59m / 48h00m / 48h01m expiry, due date and overdue, late-fee rounding and both caps, IST-midnight cases, ₹100 vs ₹100.01, 14 days vs 14 days + 1 s, 3 vs 4 loans, state-machine tables, payment amounts) and the input guards (naive datetimes, non-integer money). |
+| `tests/domain/` | 225 | The pure rules in `app/domain`: every boundary (47h59m / 48h00m / 48h01m expiry, due date and overdue, late-fee rounding and both caps, IST-midnight cases, ₹100 vs ₹100.01, 14 days vs 14 days + 1 s, 3 vs 4 loans, state-machine tables, payment amounts) and the input guards (naive datetimes, non-integer money). |
 | `tests/services/` | 134 | The use cases against a real database with a fixed clock (`FixedClock`): reserve, check out, return, cancel, maintenance, payments, suspension, read-time status, expiry on write, rollback when a step fails, 6 concurrency tests that fire several requests from separate threads at the same moment, and 2 deterministic replays of a request that waits for a lock while another commits (`test_stale_state_races.py`). |
-| `tests/api/` | 285 | The real FastAPI app and database through HTTP (`TestClient`): CRUD and its validation, the rental flows and every refusal (blocked members, loan limit, expired reservations, double check-out and return), payments and statements, the overdue list, the test clock (including out-of-range values and the switch that turns it off), refusal of NUL characters, the error shape and mapping, request ids, and what is and is not logged, including that server logs of unexpected and database errors carry no exception messages or personal data. |
+| `tests/api/` | 341 | The real FastAPI app and database through HTTP (`TestClient`): CRUD and its validation, the rental flows and every refusal (blocked members, loan limit, expired reservations, double check-out and return), payments and statements, the overdue list, the test clock (including out-of-range values and the switch that turns it off), refusal of NUL characters, the error shape and mapping, request ids, and what is and is not logged, including that server logs of unexpected and database errors carry no exception messages or personal data. |
 | `tests/db/` | 54 | Schema constraints and foreign keys, the migration (it matches the models and reverses), the seed data (including that its fees match the fee rule) and the `db_setup` command. |
 | `tests/` | 19 | Clock, config, `/health`, and the deployment files: that `ALLOW_TEST_CLOCK` is passed through by `docker-compose.yml` and set in `render.yaml`. |
 
@@ -169,7 +181,25 @@ The schema in tests always comes from the Alembic migration (never `create_all`)
 
 The two race replays fail on the code as it was before the fix (a `ValueError`, and a database CHECK-constraint error in the sweep case) and pass after it.
 
-**Coverage at the end of M3** (SQLite run, `pytest`): overall **99%** (branch coverage on). Business-rule layer: `app/domain` **100%** (`rules.py` 100%, line and branch); `app/services` **98%**; `app/repositories` **100%**. API layer: `app/api` **100%**, `app/schemas` **100%**. Not covered: the `ConflictError` raised when a reservation changes between the unlocked read and the lock in `check_out` (a race that cannot be forced reliably); the re-raise of an unrelated `IntegrityError` in `reserve_item`; two defensive branches in the expiry sweep (`support.py` lines 93 and 95→98); reinstating a suspended member who has no open suspension row; `session_scope`'s rollback branch. The committed coverage summary will be added at M6.
+**Coverage after the M4 review fixes** (SQLite run, `pytest`; M4 added `allowed_item_actions`, `has_reached_loan_limit` and the API fields they feed, all fully covered): overall **99%** (branch coverage on). Business-rule layer: `app/domain` **100%** (`rules.py` 100%, line and branch); `app/services` **98%**; `app/repositories` **100%**. API layer: `app/api` **100%**, `app/schemas` **100%**. Not covered: the `ConflictError` raised when a reservation changes between the unlocked read and the lock in `check_out` (a race that cannot be forced reliably); the re-raise of an unrelated `IntegrityError` in `reserve_item`; two defensive branches in the expiry sweep (`support.py` lines 93 and 95→98); reinstating a suspended member who has no open suspension row; `session_scope`'s rollback branch. The committed coverage summary will be added at M6.
+
+**Frontend tests (after the M4 review fixes: 176 passed in 11 files, `npm test`).** They use Vitest with React Testing Library on jsdom. The only added dependencies are `vitest`, `jsdom` and `@testing-library/*` (dev) and `react-router-dom` (runtime); there is no data-fetching, form or UI library and no mock-server package. A test renders the real app at a URL and replaces `fetch` with a small router keyed by `"METHOD /path"` (`src/test/helpers.tsx`); a request the test did not expect fails the test, so the UI cannot silently call something else. The stubs return the API's real response and error shapes, so these tests prove how the UI reacts to the API's contract, not that the backend agrees. That was checked separately by hand against a running, seeded backend (see PROMPTS.md).
+
+| File | Tests | What it checks |
+| --- | --- | --- |
+| `src/api.test.ts` | 11 | URL and query building (empty filters omitted), JSON bodies, error mapping to `ApiError` (field errors, block reasons, request id), network failure, non-JSON error bodies, 204, and that `X-Test-Clock` is sent only when enabled and set. |
+| `src/format.test.ts` | 31 | Rupee formatting (paise to ₹, Indian digit grouping), parsing typed amounts (rejects `abc`, `1.234`, negatives, zero), IST date/time. |
+| `src/messages.test.ts` | 23 | Readable text for 403 (each block reason), 404, 409, 422 (field problems, overpayment), 500 and an unreachable server; the availability wording; which URL ids are accepted (`parseId`). |
+| `src/pages/ItemsPage.test.tsx` | 17 | Search, category and status filters (kept in the address and sent to the API), paging, loading, empty and error states, an unreachable server, and the add-item form (checked before sending, sent as whole paise, server refusals shown). A page past the end (`?page=99`, and just past an exact multiple) says so, shows no "Showing" range and not "no items yet", and "Go to the last page" loads the right offset; an empty list shows the empty message and no pager. |
+| `src/pages/ItemDetailPage.test.tsx` | 22 | A button for each action in the item's `allowed_actions` and for no other (including a combination the UI has never seen); reserve, check out, return, maintenance through the API; a blocked member's reasons (403); 404, 409 and a network failure shown as readable messages; the item is fetched again after a refused action. |
+| `src/pages/MemberPage.test.tsx` | 24 | Account, active loans, history, payments, balance, "why this member can't borrow"; "At the loan limit" instead of "Can borrow" when the API's `at_loan_limit` is set (alone, and together with block reasons), and "Can borrow" one place below the limit; typed amounts that are not a rupee amount are refused on the page without a request; the server's refusal of an overpayment (422) is shown and the typed text kept; suspend, suspend with a 409, lift. |
+| `src/pages/MembersAndOverdue.test.tsx` | 17 | Member search and registration, the overdue table, paging, empty and error states, navigation, skip link; a members page past the end and an overdue list that shrinks while you are on a later page (the notice and "Go to the last page" instead of "Nothing is overdue"). |
+| `src/paging.test.ts` | 14 | `isPastEnd` and `lastOffset` at their edges: empty list, last record, first offset past it, exact multiples of the page size. |
+| `src/components/Field.test.tsx` | 2 | A field error is an `alert` tied to its input (`aria-invalid`, `aria-describedby`); no alert when there is no error. |
+| `src/testClock.test.tsx` | 10 | The test clock panel is absent and the header never sent in a normal build; opt-in build shows a banner, sends the header and can return to real time. |
+| `src/useAsync.test.tsx` | 5 | Late answers for an old key are ignored; same-key reloads keep data on screen. |
+
+Not tested in a browser automatically: layout, colour contrast, focus movement and real screen-reader output (there are no end-to-end or visual tests). Roles, labels and `aria-*` attributes are asserted in jsdom.
 
 ## 7. API overview
 
@@ -180,16 +210,16 @@ All endpoints return JSON. Interactive docs: `/docs` (Swagger UI) and `/openapi.
 | GET | `/health` | Liveness check | — |
 | POST | `/members` | Register a member (201) | 422 |
 | GET | `/members` | List members; filters `status`, `q` (name or phone); paginated | 422 |
-| GET | `/members/{id}` | Member with balance, active-loan count and `block_reasons` | 404 |
+| GET | `/members/{id}` | Member with balance, active-loan count, `block_reasons` and `at_loan_limit` | 404 |
 | PATCH | `/members/{id}` | Change name and/or phone | 404, 422 |
 | DELETE | `/members/{id}` | Delete a member with no loans, payments or suspensions (204) | 404, 409 `deletion_blocked` |
 | POST | `/members/{id}/suspension` | Suspend (optional `reason`) | 404, 409 `invalid_transition`, 422 |
 | DELETE | `/members/{id}/suspension` | Lift the suspension | 404, 409 `invalid_transition` |
 | POST | `/members/{id}/payments` | Record a payment (201) | 404, 422 `payment_exceeds_balance` / `validation_error` |
-| GET | `/members/{id}/statement` | Loans (history), fees, payments, balance, block reasons | 404 |
+| GET | `/members/{id}/statement` | Loans (history), fees, payments, balance, block reasons, `at_loan_limit` | 404 |
 | POST | `/items` | Add an item (201); starts available | 422 |
 | GET | `/items` | List items; filters `status` (as of now, incl. `overdue`), `category`, `q`; paginated | 422 |
-| GET | `/items/{id}` | Item with its status as of now and current loan | 404 |
+| GET | `/items/{id}` | Item with its status as of now, current loan (none once a hold has lapsed) and `allowed_actions` | 404 |
 | PATCH | `/items/{id}` | Change name, category, replacement value, condition note (not status) | 404, 422 |
 | DELETE | `/items/{id}` | Delete an item that has never been reserved or lent (204) | 404, 409 `deletion_blocked` |
 | POST | `/items/{id}/reservation` | Reserve for `member_id` (201); 48-hour hold | 403 `member_blocked` / `loan_limit_exceeded`, 404, 409 `invalid_transition`, 422 |
@@ -207,13 +237,16 @@ Reserve, check-out, return and cancel are item endpoints because an item has at 
 - Money is a whole number of paise (`replacement_value_paise`, `amount_paise`, `*_paise`). Floats, strings and booleans are refused, not converted.
 - Timestamps are ISO-8601 in UTC (`2026-10-12T10:00:00Z`); the UI converts to IST. `join_date` is a date in IST.
 - Lists return `{"results": [...], "total": n, "limit": n, "offset": n}`. `limit` is 1 to 200 (default 50), `offset` is 0 or more. Lists are ordered by name (members, items) or by due time (overdue).
+- **`allowed_actions` (added in M4).** Every item in a response (single or in a list) has `allowed_actions`, a list of the staff actions that make sense for the item right now, drawn from `reserve`, `check_out`, `return`, `cancel_reservation`, `start_maintenance`, `finish_maintenance`. It is computed by `allowed_item_actions` in `app/domain/rules.py` from the same state-machine table the endpoints use, as of the request time (so a lapsed reservation counts as available, and `return` is listed only while the item is actually out on loan). It is additive: existing fields are unchanged and nothing that parsed M3 responses breaks. It was added so the UI does not copy the state machine; it says the action fits the item, not that the member may borrow: reserve can still be refused (403) for a blocked member. It is also only a snapshot, so another user can still change the item first, and the refused request (409) is the authority.
+- **`at_loan_limit` (added after the M4 review).** The member detail and the statement have a boolean `at_loan_limit`: true when the member already holds 3 active loans (reserved and unexpired, or checked out) and so cannot reserve another. It comes from `has_reached_loan_limit` in `app/domain/rules.py`, the same test that makes `reserve` fail with 403 `loan_limit_exceeded`, so the UI does not need to know the number. It is a separate field and not an entry in `block_reasons` on purpose: the limit applies when reserving only (A15), and a member at the limit can still check out a reservation they hold, whereas `block_reasons` means both are blocked (and `member_blocked` is only ever returned for those reasons). Additive; nothing existing changed.
+- **A lapsed hold is not an item's current loan (changed after the M4 review).** In item responses, a reservation whose 48-hour hold has run out reads the way the member statement reads it: the item is `available` and `current_loan` is `null`. Before, `current_loan` still carried the stored `reserved` loan, which contradicted the status. Nothing is written by the read, and the loan still appears, as `expired`, in the member's statement. A hold at 47h59m is still the current loan; at exactly 48h00m it is not.
 - Request bodies reject unknown fields.
 - Text containing the NUL character (U+0000) is refused with 422, in bodies and in search parameters, because PostgreSQL cannot store it.
 - Any request may send `X-Test-Clock` (an instant between 2000-01-01 and 2200-01-01 UTC, section 10) and `X-Request-ID` (section 9).
 
 ## 8. Business rules and assumptions
 
-Every rule is enforced in the backend; the UI will only reflect it. Services (`app/services`) call the pure rules (`app/domain/rules.py`) inside one transaction and read and lock rows through `app/repositories`.
+Every rule is enforced in the backend; the UI only reflects it. Services (`app/services`) call the pure rules (`app/domain/rules.py`) inside one transaction and read and lock rows through `app/repositories`.
 
 | # | Rule (Problem 1) | Enforced in | Tests |
 | --- | --- | --- | --- |
@@ -230,7 +263,7 @@ Every rule is enforced in the backend; the UI will only reflect it. Services (`a
 
 ### Domain errors
 
-Rule violations raise subclasses of `DomainError` (`app/domain/errors.py`); the API (M3) will map each to its own response.
+Rule violations raise subclasses of `DomainError` (`app/domain/errors.py`); the API maps each to its own response (A17).
 
 | Error | Raised when |
 | --- | --- |
@@ -256,12 +289,12 @@ Rule violations raise subclasses of `DomainError` (`app/domain/errors.py`); the 
 8. **A8, thresholds are strict.** Blocked only when balance **>** ₹100 (10 000 paise) and when overdue **>** 14 days; exactly ₹100 and exactly 14 days are allowed. Because late days are rounded up, "overdue by more than 14 days" and "late-fee days > 14" are the same test.
 9. **A9, which loans count towards the limit of 3.** Reserved (unexpired), checked-out and overdue loans. An expired, cancelled or returned loan does not.
 10. **A10, member identity.** Phone numbers are not unique (a household may share a number). Members are never hard-deleted once they have history (foreign keys are `RESTRICT`); suspension is the way to stop a member borrowing.
-11. **A11, time zones.** Everything is stored and compared in UTC; only the UI displays IST. The test clock (M3) will also be a UTC instant.
+11. **A11, time zones.** Everything is stored and compared in UTC; only the UI displays IST. The test clock (M3) is also a UTC instant.
 
 12. **A12, what suspension does.** It blocks reserving and checking out only. Existing reservations and loans are left alone; the member can still return items, cancel reservations and pay fees. Reinstating lifts it and keeps the history row.
 13. **A13, operations are per item.** `reserve_item(member, item)`, `check_out(item)`, `return_item(item)` and `cancel_reservation(item)`: an item has at most one active loan, so that loan identifies the member and the rest.
-14. **A14, expiry is saved on write and derived on read.** Every write on an item first marks its lapsed reservation `expired` and frees the item. Reads (`item_status`, `member_standing`) compute the answer without writing. If a check-out or cancel arrives after the hold lapsed, the expiry is still saved before `ReservationExpired` is raised. `LoanService.expire_stale_reservations()` can sweep everything at once; nothing calls it on a schedule.
-15. **A15, when eligibility is checked.** Suspension, balance and overdue limits are checked when reserving and again when checking out (they can change in between). The 3-loan limit is checked only when reserving, because the reservation already counts as one of the three.
+14. **A14, expiry is saved on write and derived on read.** Every write on an item first marks its lapsed reservation `expired` and frees the item. Reads (`item_status`, `member_standing`) compute the answer without writing. If a check-out or cancel arrives after the hold lapsed, the expiry is still saved before `ReservationExpired` is raised. `LoanService.expire_stale_reservations()` can sweep everything at once; nothing calls it on a schedule. Item responses apply the same read-time rule to `current_loan`: once the hold has lapsed the item is available and has no current loan, even though the stored row still says `reserved` until the next write.
+15. **A15, when eligibility is checked.** Suspension, balance and overdue limits are checked when reserving and again when checking out (they can change in between). The 3-loan limit is checked only when reserving, because the reservation already counts as one of the three. The API reports it as `at_loan_limit`, separately from the block reasons (section 7).
 16. **A16, the clock cannot go backwards.** If the clock reads earlier than the event it follows (for example a test clock set before the check-out being returned), the request is refused with `InvalidTransition` and nothing changes, rather than failing a database constraint.
 
 17. **A17, HTTP status choices.** 404 for a missing member or item; 409 when the action does not fit the current state (`invalid_transition`, `reservation_expired`, `conflict`, `deletion_blocked`); 403 when the member may not borrow right now (`member_blocked` with its reasons, `loan_limit_exceeded`); 422 for malformed input and for payment amounts the account cannot take (`payment_exceeds_balance`); 400 for unreadable JSON and a bad test clock. There is no authentication, so 403 here means "the rules forbid it for this member", not "you are not logged in".
@@ -319,6 +352,16 @@ Clients never see a traceback, SQL or a database error: unexpected failures and 
 
 ## 10. Reviewer aids
 
+**Using the UI.** Start the API (seeded) and the UI as in section 5 and open <http://localhost:5173>. The menu has Items, Members and Overdue. Everything shown comes from the API on every visit; the UI keeps no rules and no copy of the data, and no success message appears until the API has answered 2xx.
+
+- **Items** (`/items`, also the front page). Search by name, filter by category and status, and page through results; the filters and page are kept in the address, so a filtered list can be bookmarked or shared. If the address asks for a page after the last one (an old bookmark, or records removed meanwhile) the page says there is nothing on it, gives the number of records and offers "Go to the last page"; it never claims there are no items when there are, and shows no "Showing 1189–40" range. Members and Overdue behave the same. Each row shows the status and an availability line: when a reservation's hold ends, the due date of a loan, or that it is overdue. The categories in the filter are the ones among the first 200 items. "Add an item" creates one (name, category, replacement value in rupees, optional condition note); the value is sent as whole paise.
+- **Item details** (`/items/:id`). Shows the item, its current loan and one button per action the API lists in `allowed_actions`: **Reserve** (choose a member from a searchable list; the form is only there for an available item), **Check out**, **Return**, **Cancel reservation**, **Put under maintenance**, **End maintenance**. Nothing else is offered. After each action the item is fetched again and the result is stated: the hold's end time, the due date, or on return the late fee charged (or that it came back on time). If the API refuses (a blocked member, someone else got there first, an expired hold), the reasons are shown in plain words and the item is re-read so the buttons match its new state.
+- **Members** (`/members`). Search by name or phone, filter by status, page, and register a member (name and phone).
+- **Member account** (`/members/:id`). Standing at the top: "Can borrow"; or each reason they cannot, from the API's `block_reasons` (suspended, balance over the limit, a loan overdue too long); or, when the API's `at_loan_limit` is set, "At the loan limit" (they cannot reserve another item but can still check out what they hold), shown on its own or after the block reasons; the fee balance, active loans, loan history and payments. **Record a payment** takes an amount in rupees and an optional note; the page only checks that it is a rupee amount above zero, and the API decides whether it is more than the balance. **Suspend** (optional reason) and **Lift suspension** change the member's status.
+- **Overdue** (`/overdue`). Loans past their due time, longest first, with the item, the member and phone, the due time in IST, days overdue and the fee if returned now, as the API computed them.
+- **Feedback.** Each page shows a loading message, an empty-state message, and for a failed load a headline, an explanation and a "Try again" button. 403, 404, 409, 422, 5xx and an unreachable server each get their own wording; when the API supplies a request id it is shown as a reference to quote; server text is shown as plain text, never as HTML. Invalid input is caught on the page first (empty name, a phone with letters, `12.345` as an amount) with the message attached to the field, and the server's own field errors are shown the same way when it refuses a value the page accepted.
+- **Accessibility.** One `h1` per page, a skip-to-content link, labelled form fields, with each inline field error tied to its input (`aria-invalid`, `aria-describedby`) and itself an `alert` region so it is announced when it appears, notices for API errors as `alert` and for results as `status`, visible focus, links for navigation and buttons for actions, and colours that follow the system light/dark setting. The layout is a single column on a phone and tables scroll sideways rather than being clipped. This was checked by reading roles and labels in the tests and by looking at the pages at desktop and phone width; no screen-reader or automated accessibility audit has been run. Known gaps: keyboard focus is not moved to the first invalid field after a failed submit or to the page heading after navigating, so a keyboard or screen-reader user has to find the error themselves (the `alert` announcement tells them it appeared); and there has been no contrast measurement.
+
 **Test clock.** Add `X-Test-Clock: <ISO-8601 timestamp with a UTC offset>` to any request and it runs as if it were that moment, so expiry and overdue can be tried without waiting. It applies to that request only; without the header the real time is used.
 
 ```powershell
@@ -332,6 +375,7 @@ curl.exe -s -X POST http://localhost:8000/items/$saw/check-out -H "X-Test-Clock:
 - Accepted: an ISO-8601 timestamp with a UTC offset that stands for an instant from `2000-01-01T00:00:00Z` to `2200-01-01T00:00:00Z` inclusive, for example `2026-10-20T10:00:00+05:30`, `2026-10-20T04:30:00Z` or `2026-10-20T04:30:00+00:00`. Refused with 400 `invalid_test_clock`: no offset, a date alone, a Unix timestamp, anything that is not ISO-8601, or an instant outside that range (`9999-12-31T23:59:59Z`, `0001-01-01T00:00:00+05:30`, `1999-12-31T23:59:59Z`). The range is checked on the instant itself, before any conversion, and nothing is written for a refused request.
 - Set `ALLOW_TEST_CLOCK=false` to refuse the header (400 `test_clock_disabled`, for every value). It is on by default so reviewers can use it on the hosted instance. It reaches the API in each setup: a local `uvicorn` reads it from the root `.env`; Docker Compose passes it through from `.env` (`docker-compose.yml`, default `true`); the Render blueprint sets it explicitly to `"true"` (`render.yaml`), so to turn it off there, change that value and redeploy (a value edited only in the dashboard is overwritten the next time the blueprint is synced). Tests read these files to make sure the setting cannot silently stop being passed through.
 - **Security implications.** The API has no authentication, so the header is open to anyone who can reach it. It bypasses no rule: every rule is judged at the pretend time. What it does allow: expiring other members' reservations early (a write at a later pretend time saves the expiry), charging or avoiding a late fee by returning at a chosen time, and leaving rows with future timestamps that real-time requests then have to live with (a reservation dated 2199 stays reserved for real-time callers and cannot be cancelled until a request sends a clock at or after that time). The accepted range only stops values that would break the application; it is not an access control. On a public deployment, use the header during the review and then turn it off.
+- **In the UI.** Not available by default. A normal build has no clock control, never sends the header, and ignores any value left in the browser's storage. Build with `VITE_ENABLE_TEST_CLOCK=true` (section 5) to get a collapsed "Reviewer test clock (testing only)" panel in the page footer where you enter a date and time in IST. While a time is set, a banner on every page says "Test clock is on" with that time, every API request carries `X-Test-Clock`, and "Go back to real time" removes it. The setting lives in `sessionStorage`, so it ends with the browser tab. The UI only forwards the time; the API still validates it (range, offset, `ALLOW_TEST_CLOCK`) and a refusal is shown like any other error. The same warnings as above apply: writes made under a pretend time keep it. Do not publish a build with the flag on without also turning off `ALLOW_TEST_CLOCK` after the review.
 - Things worth trying: reserve at T and check out at T+47h59m (ok) and T+48h00m (409 `reservation_expired`); check out at T and return at T+7d (no fee) and T+7d+1s (₹10); `GET /loans/overdue` and `GET /items?status=overdue` at T+7d and T+7d+1s; a member with a balance of exactly ₹100 (can borrow) and ₹100.01 (blocked).
 - Anything written under a pretend time (a reservation, a payment) keeps that time. Re-seed afterwards (below).
 
@@ -352,11 +396,17 @@ Hosted instance: _TBD (M5)_. The same requests work against the live API base UR
 
 ## 11. Known limitations
 
-- After M3 there is no UI (M4) and no deployment (M5). The API has no authentication: anyone who can reach it can use every endpoint, including suspension and maintenance, and can set the test clock.
+- After M4 there is no deployment (M5). Nothing has been published, so the UI has only been served locally. There is no authentication anywhere: anyone who can reach the API can use every endpoint, and the UI offers every staff action (suspension, maintenance, payments) to everyone who opens it. The UI is a staff desk by design, not a member self-service site.
 - **Nothing has run on a real PostgreSQL server.** At M1 and M2 the local Docker daemon would not start, so the migration, the DB tests and the concurrency tests were run on SQLite only. The PostgreSQL DDL was generated and read (`alembic upgrade head --sql`) but not executed. Specifically unverified: the `SELECT ... FOR UPDATE` locking in `app/repositories`, the PostgreSQL behaviour of the concurrency tests, `compare_metadata` on PostgreSQL, and the claim that PostgreSQL reports CHECK violations in alphabetical order (one test accepts either constraint name because of it). The CI workflow runs the suite on PostgreSQL; treat that run as the first real verification.
 - Two PostgreSQL risks are reasoned about but not tested. First, no lock timeout is set, so a stuck transaction would make others wait on its row locks indefinitely (SQLite gives up after 5 seconds). Second, each service reads the clock before it takes its locks, so a request that waits for a lock records a slightly earlier time than a request that committed while it waited, which can occasionally produce a spurious "earlier than" error with the real clock (the test clock is not affected).
 - API choices a reviewer may disagree with, all listed as assumptions: 403 for blocked members (A17), item status filtering done in Python after reading every matching item (A20), and offset-based paging (a list can shift between pages if rows change meanwhile).
-- The item detail does not list which actions are currently valid; a UI must either infer them from the status or try and handle the 409 (revisit in M4).
+- `allowed_actions` is a snapshot, not a lock. Two staff members looking at the same item can both be offered "Check out"; the second gets a 409 shown in plain words and the item is re-read. It also says nothing about the member: on the item page a blocked member's reservation is refused by the API (403) and the reasons are shown after the attempt, not before. The member's own page does show the block reasons and `at_loan_limit` up front.
+- Not in the UI: editing or deleting an item or member (the API supports both), listing every payment or loan across members, and any bulk action. Items on a loan show "Member #id", not a name, because the item response carries only the id (the member's page has the name).
+- The item category filter lists the categories found in the first 200 items; with more than 200 items, a category that only appears later is missing from the dropdown (the address `?category=...` still works). Search matches item names, not categories.
+- UI layout and accessibility were checked by tests of roles and labels and by eye at desktop and phone width. There are no end-to-end, visual-regression, contrast-audit or screen-reader checks, and no cross-browser run beyond the app's built-in browser. At phone width wide tables scroll sideways. Focus is not moved on navigation or to an invalid field (section 10).
+- Two small behaviours found in review and left as they are (neither was reproduced in a browser): the action buttons on an item are enabled again as soon as the request answers, slightly before the item has been re-read, so a very fast double click could send a stale action (answered with a readable 409); and if the re-read itself fails, the item page is replaced by the error with a retry button and the earlier result message is lost.
+- The UI was exercised by hand against a locally running, seeded API on SQLite, not against PostgreSQL or a hosted deployment.
+- `VITE_API_URL` and `VITE_ENABLE_TEST_CLOCK` are fixed when the UI is built, so changing either needs a rebuild (on Vercel, a redeploy).
 - Writes made under `X-Test-Clock` keep the pretend timestamps (A21), and the header is open to any caller while the API has no authentication (section 10).
 - Not verified on PostgreSQL: that a NUL character really would fail there (the API now refuses it before the database sees it), and the exact attributes psycopg exposes for the SQLSTATE and constraint names in the error log (`db_error_code`, `db_constraint`; the tests use stand-ins for them and, for a real failure, SQLite).
 - Server logs of unexpected errors deliberately omit the exception message, so a failure that cannot be understood from its class, location and constraint has to be reproduced locally (section 9).

@@ -16,13 +16,16 @@ Rules for this file:
 | 4   | 2026-10-17 | M1        | Claude Code (Sonnet 5.5)  | Edited: implemented M1; review (prompt 5) found three small issues, fixed in prompt 6; the user then committed M1 (0abe7cf) |
 | 5   | 2026-10-17 | M1        | Claude Code (Sonnet 5.5)  | Used: read-only review report; three findings acted on in prompt 6 |
 | 6   | 2026-10-17 | M1        | Claude Code (Sonnet 5.5)  | Used: three review findings fixed (see below); M1 committed afterwards (0abe7cf) |
-| 7   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Pending review: M2 implemented and tested on SQLite only; uncommitted |
-| 8   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Used: read-only review of M2; one likely PostgreSQL-only bug in `check_out` and some documentation inaccuracies reported, nothing fixed yet |
+| 7   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Edited: M2 implemented; review (prompt 8) found a PostgreSQL-only bug, fixed in prompt 9; committed (2b45b98) |
+| 8   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Used: read-only review of M2; one likely PostgreSQL-only bug in `check_out` and some documentation inaccuracies reported; fixed in prompt 9 |
 | 9   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Used: stale-loan bug fixed with 2 regression tests, README claims corrected; M2 then committed (2b45b98) |
-| 10  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Pending review: REST API implemented and tested on SQLite only; uncommitted |
+| 10  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Edited: REST API implemented; review (prompt 11) found a serious test-clock bug, fixed in prompts 12-13; M3 then committed (d5029e4) |
 | 11  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Used: read-only review of M3; one confirmed serious bug (extreme X-Test-Clock values), some documentation errors and PostgreSQL-only concerns reported; fixes made in prompt 12 |
-| 12  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Pending review: clock range, NUL input, ALLOW_TEST_CLOCK pass-through and README corrections made; SQLite only; uncommitted |
-| 13  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Pending review: error logs no longer carry exception messages or tracebacks; regression tests added; SQLite only; uncommitted |
+| 12  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Used: clock range, NUL input, ALLOW_TEST_CLOCK pass-through and README corrections made; SQLite only; committed with M3 (d5029e4) |
+| 13  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Used: error logs no longer carry exception messages or tracebacks; regression tests added; SQLite only; committed with M3 (d5029e4) |
+| 14  | 2026-10-17 | M4        | Claude Code (Sonnet 5.5)  | Edited: React UI built; review (prompt 15) found three UI bugs and a weak test, fixed in prompt 16; its live-check description was also corrected there |
+| 15  | 2026-10-17 | M4        | Claude Code (Sonnet 5.5)  | Used: read-only review of M4; 3 confirmed bugs, 1 test that did not test what it said, several smaller risks reported; fixed in prompt 16 |
+| 16  | 2026-10-17 | M4        | Claude Code (Sonnet 5.5)  | Pending review: review findings fixed (see below); frontend and backend suites pass on SQLite only; uncommitted |
 
 ---
 
@@ -296,7 +299,7 @@ Rules for this file:
 - Problems found along the way: one test failed on a badly worded error message (fixed in the rule); and a PowerShell read/write round trip corrupted the `₹` character in 8 test files, which I noticed from the output, restored from git and redid with Python in UTF-8, then checked that no corrupted text remained.
 - Not verified: anything on a real PostgreSQL server. Docker Desktop was still not running when checked at the end of this task, so the locking, the concurrency tests and the migration have not been exercised on PostgreSQL. Nothing is committed.
 
-**Outcome:** Pending review.
+**Outcome:** Edited. Reviewed in prompt 8, the confirmed bug fixed in prompt 9, then committed (2b45b98).
 
 
 ---
@@ -393,7 +396,7 @@ Late fees, state transitions, eligibility thresholds and payments were traced an
 - Mutation check on the API layer: 16 of 16 deliberate breakages (for example ignoring the test-clock header, accepting float money, accepting unknown fields, `<=` instead of `<` on the overdue list, echoing submitted values in validation errors, leaking exception text, logging the query string) were each caught by at least one test (no survivors).
 - Not verified: anything on a real PostgreSQL server (Docker Desktop is still not running). Nothing is committed.
 
-**Outcome:** Pending review.
+**Outcome:** Edited. Reviewed in prompt 11; fixes in prompts 12 and 13; committed as d5029e4.
 
 
 ---
@@ -486,5 +489,110 @@ Business-rule delegation, status codes and error mapping for the tested inputs, 
 - Mutation check: 8 ways of bringing the leak back (traceback logged again in either place, exception message, driver message, or SQL and parameters added to the fields, location dropped, SQLSTATE dropped, database log fields dropped) were each caught by at least one test.
 - README section 9 and the known limitations were updated, including the trade-off: a log line now tells you the failing class, location and constraint but not the message or value, so some failures must be reproduced locally. A residual remains outside our code: if an error occurs after the response has started, the middleware re-raises and uvicorn logs it with its own traceback, which includes the message (the re-raise is tested; uvicorn's logging is not).
 - Not verified: anything on a real PostgreSQL server, including the exact attributes psycopg exposes for the SQLSTATE and constraint names; the tests use stand-ins for those and a real SQLite failure. Nothing is committed.
+
+**Outcome:** Used. Committed together with the rest of M3 (d5029e4).
+
+---
+
+## Prompt 14 — M4 frontend UI (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> Implement M4: the frontend UI for the Equipment Rental Desk.
+> First inspect the existing React + TypeScript + Vite frontend, M3 API routes and schemas, README, PROMPTS.md, and current Git status. Reuse the existing structure and API contracts. Do not rewrite the backend or start M5.
+> Build these required workflows:
+>
+> 1. Item catalogue: list items, search by name, filter by category/status, and show useful availability information.
+> 2. Item details and actions: show item details and only offer actions valid for its current state. Support reservation, check-out, return, cancellation, and maintenance actions where permitted by the API.
+> 3. Member view: find/select a member and display active loans, loan history, fee balance, payments, suspension status, and clear reasons when borrowing is blocked. Include payment and suspension controls where appropriate.
+> 4. Overdue dashboard: show overdue loans and relevant member/item/due-date information.
+> 5. User feedback: loading states, empty states, form validation, success messages, and readable API errors. Handle 403, 404, 409, and 422 responses without crashing.
+> 6. API integration: all displayed data and mutations must use the real backend. Do not hard-code business rules or mock successful API responses.
+>
+> Requirements:
+>
+> * Keep the interface clean, responsive, accessible, and practical rather than over-designed.
+> * Use the configured API base URL; document required frontend environment variables.
+> * Ensure the test-clock feature is not silently enabled or exposed as a normal user control.
+> * Add meaningful frontend tests if the project already has a test framework; if not, choose a lightweight approach and explain it before adding major dependencies.
+> * Update README.md with the actual UI workflows and PROMPTS.md with this prompt and its outcome.
+> * Run frontend lint, type-check, tests (if configured), and production build. Run the backend test suite too if any backend files change.
+> * Inspect the full diff and report files changed, checks/results, and unresolved issues.
+>
+> Do not commit. Do not implement stretch features or change the API contract without explaining why.
+
+**What the assistant did:**
+
+- Inspected first: the M0 frontend scaffold, the M3 routes and schemas, README, PROMPTS.md and `git status` (clean after the M3 commit). Reused the existing Vite/React/TypeScript structure, `VITE_API_URL` and the M3 JSON contract.
+- **Dependencies (only these were added).** Runtime: `react-router-dom`. Dev: `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event`, `@testing-library/jest-dom`. The project had no frontend test framework, so Vitest was chosen because it shares Vite's config and transforms; Testing Library tests what a user can see and do. No data-fetching, form, state or UI library was added: a small `request()` wrapper and a `useAsync` hook were enough, and tests replace `fetch` with a router that fails on any request it was not told to expect.
+- **UI:** items (search, category and status filters kept in the address, paging, availability line, add an item), item details with one button per action the API allows, members (search, filter, register), member account (standing and reasons for being blocked, balance, active loans, history, payments, record a payment, suspend and lift), and the overdue dashboard. Loading, empty, validation, success and error states on every page; 403, 404, 409, 422, 5xx and an unreachable server get readable messages and never crash a page; the item or member is re-read after a refused action.
+- **One API change, additive, and why.** Item responses now include `allowed_actions`, computed by a new `allowed_item_actions` in `app/domain/rules.py` from the same transition table the endpoints use. Without it the UI would have had to copy the state machine (violating "no business rules in the UI") or offer buttons and rely on a 409. Existing fields are unchanged. Files: `backend/app/domain/rules.py`, `app/services/views.py`, `app/services/items.py`, `app/schemas/items.py`, tests `tests/domain/test_allowed_item_actions.py` and `tests/api/test_allowed_actions_api.py`, and one expected dictionary in `tests/api/test_items_api.py`. Nothing else in the backend changed.
+- **Test clock:** not a normal control. Without `VITE_ENABLE_TEST_CLOCK=true` at build time there is no panel and the header is never sent, even if a value is in storage. With it, a collapsed "testing only" panel in the footer, a banner on every page while a time is set, and the setting is kept in `sessionStorage` only. Compose passes the flag through with default `false`; the Dockerfile has a matching `ARG`.
+- Config and docs: `frontend/.env.example`, `frontend/Dockerfile`, `docker-compose.yml`, CI now runs `npm test`; README updated (status, stack, folder tree, frontend variables and commands, frontend tests, `allowed_actions`, UI workflows, test clock in the UI, limitations).
+- **Results.** Frontend: `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm test` (149 passed in 9 files) and `npm run build` pass. Backend: `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 712 passed, 0 skipped, 0 expected failures (SQLite); coverage 99% overall.
+- **Live check (corrected in prompt 16).** Against a locally running, freshly seeded backend (SQLite) I drove the UI in the app's browser. What the session record shows was done: opened the item list; opened the Circular Saw; searched for and chose a member (Aarav Menon); reserved it and checked it out; opened a blocked member (Kavita Iyer); on that member, entered a non-number (`abc`, refused on the page), an overpayment (`120.01` against a balance of ₹120, refused by the API) and a payment of ₹20 (accepted, taking the balance to ₹100); read the overdue page; and measured page overflow at phone width on five pages. An earlier version of this entry also listed filtering, returning an item, suspending and lifting a suspension, a 404 page and an unreachable API as live-checked. The session record does not show those being done at the time, so that claim is withdrawn: they were covered by the automated tests only. The 404 page and the unreachable-API message were later seen in the production build during the review (prompt 15); suspend, lift, return and the filters have still not been driven by hand. Coordinate clicks in the browser pane did not reach some buttons, so those were triggered by calling the element's `click()` through the page; the app's behaviour was confirmed from the network log and the page. This is a manual check, not an automated one.
+- **Not verified:** anything on a real PostgreSQL server (still never run); the UI against a hosted deployment; screen-reader, contrast-audit, visual-regression, end-to-end or cross-browser testing. Nothing is committed.
+
+**Outcome:** Edited. Reviewed in prompt 15; the findings were fixed in prompt 16.
+
+---
+
+## Prompt 15 — M4 review (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> Review the uncommitted M4 frontend implementation before commit. Do not add features or start M5.
+> Inspect the actual code, tests, and full Git diff.
+>
+> 1. UI workflows: Verify item search/filter/pagination, item details and actions, member registration/search/account/payment/suspension, and the overdue dashboard. Confirm all mutations call the real API.
+> 2. Business rules: Check that the new `allowed_actions` field is derived from the existing domain transition rules and doesn't duplicate business logic. Confirm the API schema, response tests, and frontend types agree. Verify stale actions still produce readable 409 responses.
+> 3. Test clock: Check that a normal production build neither displays the clock panel nor sends `X-Test-Clock`, including when stale browser storage exists. Confirm Docker defaults the feature off.
+> 4. Accessibility and errors: Inspect labels, keyboard focus, form errors, loading/empty states, responsive layout, and handling of API failures.
+> 5. Tests and warning: Run all frontend tests, lint, Prettier check, TypeScript check, and production build. Run the full backend suite with coverage and Ruff. Investigate the reported backend warning and determine whether it is harmless or should be fixed.
+> 6. CI and PostgreSQL: Inspect `.github/workflows/ci.yml`. Confirm whether CI actually starts PostgreSQL and runs migrations and concurrency tests against it, rather than merely testing SQLite. Report what is configured versus what has actually run.
+> 7. Documentation and hygiene: Verify README and PROMPTS.md against the implementation. Inspect the complete diff for accidental files, secrets, stale test counts, encoding issues, and unrelated changes.
+>
+> Report concrete findings with file paths and line numbers, distinguishing confirmed bugs from unverified risks. Do not fix anything yet, do not commit, and do not claim PostgreSQL is verified unless a real PostgreSQL test run succeeds.
+
+**What the assistant did:** read-only; nothing in the repository was changed. It read the code, tests and diff, ran the checks, and probed the real API and the production build.
+
+- Checks run: frontend lint, Prettier, `tsc`, 149 tests, production build (all passed); backend Ruff and 712 tests at 99% coverage (passed). The one warning is `StarletteDeprecationWarning` from `fastapi/testclient.py:1` ("Using `httpx` with `starlette.testclient` is deprecated"): harmless today, test-only; Starlette is not pinned directly, so a future release could drop `httpx` support in the test client.
+- Confirmed bugs (reproduced): (1) an item whose 48-hour hold had lapsed read `available` but kept the stored `reserved` loan as `current_loan`, so the item page showed an "Available" badge and a "Current loan: Reserved, hold ends <past>" section; (2) a member holding 3 active loans (the seeded Priya Nair) was shown "Can borrow" because the loan limit is not in `block_reasons`; (3) a page number past the end (`?page=100`) showed "There are no items yet." and "Showing 1189–40 of 40" (reproduced in the production build against a stubbed response; the overdue list has the same hole after it shrinks).
+- Test gap: `test_allowed_actions_api.py` was named "every listed action is accepted" but only exercised the unlisted actions.
+- Smaller findings: inline field errors had no live-region role and focus is not moved (README overstated this); the OpenAPI `ItemAction` has `expire_reservation` which the frontend type omits; the buttons on an item re-enable slightly before it is re-read; a failed re-read replaces the page with an error. PROMPTS.md prompt 14 listed live checks the session record does not show.
+- CI: a `postgres:16-alpine` service is configured and a second `pytest` run sets `TEST_DATABASE_URL`, so the Alembic migration and every test using the database fixtures (including the concurrency and race tests) would run on PostgreSQL; two test files use their own SQLite databases whatever the setting. No Docker image build runs in CI. Whether CI ever ran or passed could not be seen: there is no `gh`, and the unauthenticated GitHub API returned 404 for the repository (private or absent). No PostgreSQL ran locally (no Docker daemon, no native PostgreSQL found).
+- Production build check: with a stale value in `sessionStorage`, the served production build showed no clock panel and no banner, and its requests carried only the `Accept` header.
+
+**Outcome:** Used. The findings were fixed in prompt 16.
+
+---
+
+## Prompt 16 — Fix the confirmed M4 findings (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> Fix the confirmed M4 findings before commit. Do not start M5 or add stretch features.
+>
+> 1. Expired reservation: Fix the item API response so a reservation past its 48-hour expiry is represented consistently with the effective loan state used by the member statement. Preserve historical loan data and do not duplicate the state machine in the UI. Add an API regression test at and after the expiry boundary.
+> 2. Borrowing eligibility: Fix the misleading “Can borrow” status when a member already has three active loans. Prefer extending the existing API eligibility information to include the loan-limit reason, then update the member UI to display it. Keep the rule in the backend and test the exact boundary.
+> 3. Pagination: Fix out-of-range page handling on items, members, and overdue views. No negative ranges or “no items yet” message when records exist. Add regression tests for pages beyond the end and empty datasets.
+> 4. Allowed-actions test: Inspect `backend/tests/api/test_allowed_actions_api.py`. Make the test genuinely exercise every advertised action through the API, or correct its name/comment so it accurately describes what it verifies. Keep coverage useful without brittle test complexity.
+> 5. Accessibility/docs: Ensure inline field errors are announced accessibly using suitable labels/ARIA or live-region behavior. Correct README accessibility claims to match the implementation.
+> 6. CI and prompt log: Ensure frontend tests run in `.github/workflows/ci.yml`. Add this review prompt and its actual outcome to `PROMPTS.md` as prompt 15. Correct prompt 14 if it claims checks that were not performed; do not fabricate evidence.
+> 7. Run frontend lint, Prettier check, TypeScript check, tests and production build. Run backend Ruff, the full backend suite and coverage. Inspect the full diff for unrelated changes.
+>
+> Do not commit. Report each finding as fixed or unresolved, the exact test results, files changed, and whether PostgreSQL has actually been tested. Do not claim a GitHub CI pass without evidence of a completed run.
+
+**What the assistant did:**
+
+- **1, lapsed reservation: fixed.** `item_view` in `app/services/items.py` now drops a loan whose effective status (`effective_loan_status`, the rule the statement uses) is `expired`, so the item is `available` with `current_loan: null` once the hold has run out. Reads still write nothing and the stored loan still appears as `expired` in the member's statement. The UI needed no change. New `tests/api/test_lapsed_reservation_api.py` (7 tests): at 47h59m the loan is still current; at exactly 48h00m and at 48h01m it is not; list and detail agree; the statement agrees at all three points; reading does not change anything; another member can reserve afterwards and the first loan stays in history.
+- **2, loan limit: fixed, with a deliberate difference from the suggestion.** The prompt preferred adding the loan limit to the existing eligibility information (`block_reasons`). It was not added there because `block_reasons` means "cannot reserve or check out" and `member_blocked` is built from it, whereas the limit stops reserving only (A15): a member at the limit can still check out a reservation they hold. Putting it in the list would have made the UI say check-out is blocked and would change the 403 contract. Instead the member detail and the statement have a new boolean `at_loan_limit`, computed by a new `has_reached_loan_limit` in `app/domain/rules.py` (the same test `ensure_within_loan_limit` now uses). The member page shows "At the loan limit" (alone, or after the block reasons) instead of "Can borrow". New `tests/domain/test_loan_limit_flag.py` and `tests/api/test_loan_limit_flag_api.py` (0, 1, 2 loans false; 3 true; the 4th reservation refused exactly when the flag is set; a lapsed hold stops counting at 48h00m; cancel and return free a place; check-out still works at the limit; independent of suspension); two existing exact-shape tests gained the field.
+- **3, pagination: fixed.** Items, Members and Overdue now show "There is nothing on this page. The list has N …" with a "Go to the last page" button when the page starts after the last record; the "no items yet / no members / nothing overdue" messages appear only for a genuinely empty list, and the pager shows no range for a page past the end. New `src/paging.ts` and tests: pages past the end for items (including just past an exact multiple), members and an overdue list that shrinks while you are on page 2; empty lists show the empty message and no pager.
+- **4, allowed-actions test: fixed.** `test_allowed_actions_api.py` now runs every one of the 6 actions in each of 6 states (available, reserved, checked out, overdue, under maintenance on loan, under maintenance idle) on a fresh item: a listed action must succeed (200/201), an unlisted one must return 409 and change nothing. A second test checks the matrix is not vacuous (each action is listed somewhere).
+- **5, accessibility and docs: fixed in part.** Inline field errors are now `role="alert"` and stay tied to their input with `aria-describedby`/`aria-invalid`; tested in `src/components/Field.test.tsx`. Focus is still not moved to an invalid field or to the page heading after navigation; this is now stated in README sections 10 and 11 instead of being implied away. The README's accessibility paragraph, API section, test tables and counts were corrected.
+- **6, CI and prompt log.** `.github/workflows/ci.yml` runs `npm test` in the frontend job (that line is uncommitted, like the rest of M4, so it has not run on GitHub). This entry and prompt 15 were added. The prompt asked for the review prompt as prompt 15; this fix prompt is logged as prompt 16 so that every prompt is recorded. Prompt 14's live-check bullet was rewritten to what the session record supports, and the withdrawn claims are stated there. No evidence was added that did not exist.
+- **Mutation checks.** Each fix was broken on purpose and the new tests failed: the lapsed-loan filter removed (4 failures), the loan-limit comparison changed from `>=` to `>` (7 failures), the matrix test against a list that offers `return` for an idle maintenance item (3 failures), `isPastEnd` forced to false (8 failures), `at_loan_limit` ignored by the UI (2 failures), `role="alert"` removed from field errors (1 failure). Sources were restored afterwards.
+- **Results.** Frontend: `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm test` (176 passed in 11 files) and `npm run build` pass. Backend: `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 773 passed, 0 skipped, 0 expected failures (SQLite), coverage 99%.
+- **Not fixed / not verified.** The two small behaviours (buttons re-enabling before the re-read; a failed re-read replacing the page) are left and listed in README section 11. The OpenAPI/frontend `ItemAction` difference is left (harmless, covered by a domain test). **PostgreSQL has still not been run**: there is no Docker daemon and no native PostgreSQL here, so the migration, locking and concurrency behaviour remain unverified. **No GitHub Actions result was seen**, so nothing is claimed about CI passing. Nothing is committed.
 
 **Outcome:** Pending review.

@@ -121,6 +121,7 @@ def test_statement_of_a_new_member_is_empty(api):
         "total_payments_paise": 0,
         "active_loan_count": 0,
         "block_reasons": [],
+        "at_loan_limit": False,
         "loans": [],
         "payments": [],
     }
