@@ -8,10 +8,11 @@ from app.models import Base
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
-database_url = get_settings().sqlalchemy_url
+# Tests (and scripts) can point Alembic at another database by setting sqlalchemy.url.
+database_url = config.get_main_option("sqlalchemy.url") or get_settings().sqlalchemy_url
 
 
 def run_migrations_offline() -> None:

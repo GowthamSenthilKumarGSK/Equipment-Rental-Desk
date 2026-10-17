@@ -8,6 +8,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci # throwaway CI database, not a real secret
+          POSTGRES_DB: rental_desk_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d rental_desk_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,7 +32,11 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
+      # Same suite twice: SQLite (default) and PostgreSQL (the production database).
       - run: pytest
+      - run: pytest
+        env:
+          TEST_DATABASE_URL: postgresql://ci:ci@localhost:5432/rental_desk_test
 
   frontend:
     runs-on: ubuntu-latest

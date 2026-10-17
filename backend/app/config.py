@@ -8,6 +8,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 REPO_ROOT_ENV = Path(__file__).resolve().parents[2] / ".env"
 
 
+def to_sqlalchemy_url(url: str) -> str:
+    """Render and Heroku-style hosts hand out `postgres://` / `postgresql://` URLs.
+
+    SQLAlchemy needs to be told to use the psycopg 3 driver.
+    """
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix) :]
+    return url
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=REPO_ROOT_ENV, extra="ignore")
 
@@ -18,14 +29,7 @@ class Settings(BaseSettings):
 
     @property
     def sqlalchemy_url(self) -> str:
-        """Render and Heroku-style hosts hand out `postgres://` / `postgresql://` URLs.
-
-        SQLAlchemy needs to be told to use the psycopg 3 driver.
-        """
-        for prefix in ("postgres://", "postgresql://"):
-            if self.database_url.startswith(prefix):
-                return "postgresql+psycopg://" + self.database_url[len(prefix) :]
-        return self.database_url
+        return to_sqlalchemy_url(self.database_url)
 
     @property
     def cors_origin_list(self) -> list[str]:
