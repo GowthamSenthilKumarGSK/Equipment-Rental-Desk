@@ -3,9 +3,6 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.domain.rules import calculate_late_fee_paise, late_fee_days
-from tests.markers import awaiting_m2
-
-pytestmark = awaiting_m2
 
 DUE_AT = datetime(2026, 10, 19, 10, 0, tzinfo=UTC)
 SECOND = timedelta(seconds=1)

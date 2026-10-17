@@ -10,12 +10,15 @@ Rules for this file:
 
 | #   | Date       | Milestone | Tool                      | Outcome (used as-is / edited / rejected) |
 | --- | ---------- | --------- | ------------------------- | ---------------------------------------- |
-| 1   | 2026-10-17 | M0        | Claude Code (Sonnet 5.5)  | Scaffold kept; follow-up review and fixes requested in prompts 2-3 (final M0 approval pending) |
+| 1   | 2026-10-17 | M0        | Claude Code (Sonnet 5.5)  | Used: scaffold kept after the review and git fixes in prompts 2-3; committed as 65839f7 |
 | 2   | 2026-10-17 | M0        | Claude Code (Sonnet 5.5)  | Used: read-only review report; found no git repo, `PROMPTS.md` missing this entry, OneDrive sync risk |
-| 3   | 2026-10-17 | M0        | Claude Code (Sonnet 5.5)  | Used: git fixes applied (see below); commit left to the user |
-| 4   | 2026-10-17 | M1        | Claude Code (Sonnet 5.5)  | Edited: implemented M1; review (prompt 5) found three small issues, fixed in prompt 6; uncommitted |
+| 3   | 2026-10-17 | M0        | Claude Code (Sonnet 5.5)  | Used: git fixes applied (see below); the user then committed M0 (65839f7) |
+| 4   | 2026-10-17 | M1        | Claude Code (Sonnet 5.5)  | Edited: implemented M1; review (prompt 5) found three small issues, fixed in prompt 6; the user then committed M1 (0abe7cf) |
 | 5   | 2026-10-17 | M1        | Claude Code (Sonnet 5.5)  | Used: read-only review report; three findings acted on in prompt 6 |
-| 6   | 2026-10-17 | M1        | Claude Code (Sonnet 5.5)  | Used: three review findings fixed (see below); uncommitted |
+| 6   | 2026-10-17 | M1        | Claude Code (Sonnet 5.5)  | Used: three review findings fixed (see below); M1 committed afterwards (0abe7cf) |
+| 7   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Pending review: M2 implemented and tested on SQLite only; uncommitted |
+| 8   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Used: read-only review of M2; one likely PostgreSQL-only bug in `check_out` and some documentation inaccuracies reported, nothing fixed yet |
+| 9   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Pending review: stale-loan bug fixed with 2 regression tests, README claims corrected; uncommitted |
 
 ---
 
@@ -69,7 +72,7 @@ Rules for this file:
 
 **What the assistant did:** read both PDFs (text extracted with pdfplumber because the PDF reader tool needed poppler), created the monorepo scaffold (FastAPI health endpoint, Alembic config, React/Vite page calling `/health`, Ruff/ESLint/Prettier, pytest, Dockerfiles, compose, `render.yaml`, `vercel.json`, CI workflow, README skeleton, this file) and ran lint, format, tests, build and a manual end-to-end check.
 
-**Outcome:** Pending review.
+**Outcome:** Used. Scaffold kept after the review (prompt 2) and git fixes (prompt 3); committed by the user as 65839f7.
 
 ---
 
@@ -112,7 +115,7 @@ Rules for this file:
 
 **What the assistant did:** extended `.gitignore`, ran `git init`, added "local development only" notes for the `rental` password to `.env.example`, `docker-compose.yml` and the README, and added prompts 2 and 3 to this log. Nothing was staged or committed.
 
-**Outcome:** Pending review.
+**Outcome:** Used. The user then committed M0 (65839f7).
 
 ---
 
@@ -173,7 +176,7 @@ Rules for this file:
 
 **Reference-implementation check (not part of the repository or the test suite):** after the tests were written, the assistant wrote a throwaway implementation of the `app/domain/rules.py` signatures in the session's scratch directory, outside the repo, and ran the whole suite against it with `--runxfail`. All 182 tests passed (the 66 normal tests plus the 116 `awaiting_m2` tests). This only shows that the test expectations are consistent with each other and with the assistant's reading of the rules; the same author wrote both, so it does not confirm the assignment's intent. It does **not** verify the application's implementation: `rules.py` in the repo still raises `NotImplementedError`, and the normal `pytest` run reports 66 passed and 116 xfailed with no reference implementation involved. The throwaway file is not committed and M2 must be written and tested for real.
 
-**Outcome:** Pending review. Nothing committed.
+**Outcome:** Edited. Reviewed in prompt 5, three small issues fixed in prompt 6, then committed by the user as 0abe7cf.
 
 ---
 
@@ -218,5 +221,132 @@ Rules for this file:
 > Then run the normal test suite and relevant lint/format checks. Inspect the final diff and report the results. Do not commit automatically. Do not modify unrelated files or implement business rules.
 
 **What the assistant did:** (1) rewrote `test_overdue_cannot_be_stored_as_a_loan_status` in `tests/db/test_schema.py`: a control insert with a legal status must succeed, then the same statement with `'overdue'` must raise `IntegrityError` naming either `ck_loans_status_valid` or `ck_loans_status_matches_timestamps`, so the test no longer depends on which constraint a database reports first. Checked on SQLite only; the PostgreSQL behaviour it allows for has still not been observed. (2) Rewrote the "Tests waiting for M2" paragraph in `README.md` to separate the 116 strict expected failures (115 in `tests/domain`, 1 in `tests/db/test_seed.py`) from the 66 passing tests. (3) Corrected this file as requested. After the changes: `ruff check` and `ruff format --check` passed; `pytest` exited 0 with 66 passed, 0 skipped, 116 xfailed. Nothing was committed and no business rule was implemented.
+
+**Outcome:** Used. M1 was committed afterwards (0abe7cf).
+
+
+---
+
+## Prompt 7 — M2 business rules and services (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> M1 is committed. Continue the KJBN Labs Equipment Rental Desk assignment from the existing repository. Read the current domain code, models, tests and the Problem 1 PDF before changing anything.
+> Task: M2 — Implement business rules
+> Implement the actual business logic and services. Do not build the HTTP API or frontend features in this milestone.
+> 1. Implement these rules
+>
+> * Item lifecycle: Available → Reserved → Checked Out → Available. Overdue is derived from the due date. Maintenance transitions must preserve loan history and prevent accidental availability.
+> * Reservations expire after 48 hours. Enforce expiry when relevant items are read or modified.
+> * Checkout sets a due date seven days later.
+> * Late fees: ₹10 per late day, rounded up, capped at ₹200 and the item's replacement value.
+> * Members may hold at most three active loans; Reserved, Checked Out and Overdue count.
+> * Block reservation and checkout when the outstanding balance is over ₹100 or a loan is overdue by more than 14 days.
+> * Suspended members cannot reserve or check out.
+> * Returns must reject loans that are not currently checked out.
+> * Payments must update the outstanding balance correctly and reject overpayments.
+> * Reservation cancellation must be valid only for a reserved loan.
+>
+> 2. Resolve ambiguities explicitly
+> Before implementing the fee calculation, inspect the existing assumptions and tests. Use a single, documented interpretation of “calendar days, rounded up,” and add boundary tests around due times and IST midnight. Do not silently change existing assumptions.
+> Preserve the documented reservation-expiry boundary and maintenance behaviour unless the assignment or tests reveal a contradiction. Keep every assumption in README.md.
+> 3. Architecture and reliability
+>
+> * Keep domain rules independent of HTTP handlers.
+> * Keep database transactions in services/use cases.
+> * Use the existing SQLAlchemy models, repositories and migration; do not recreate the schema unnecessarily.
+> * Ensure checkout is concurrency-safe. Use appropriate PostgreSQL row locking and database constraints; handle SQLite's limitations separately.
+> * Update the item and loan consistently within a transaction.
+> * Use integer paise for all money and UTC timestamps internally.
+> * Return clear domain errors for invalid transitions, blocked members, conflicts and invalid payments.
+> * Do not swallow exceptions or hide failing tests.
+>
+> 4. Testing
+> Implement the existing `awaiting_m2` tests and add any missing cases needed for the rules above.
+> Test:
+>
+> * Exact reservation-expiry boundaries.
+> * Due-date and late-fee boundaries.
+> * Both fee caps.
+> * ₹100 and ₹100.01 balances.
+> * Exactly 14 days overdue versus 14 days plus one second.
+> * Third versus fourth active loan.
+> * Suspended members.
+> * Invalid transitions, double checkout and double return.
+> * Payment equal to balance and overpayment.
+> * Transaction rollback and concurrent checkout where supported.
+>
+> Use the existing test clock design. Do not use the throwaway reference implementation as proof that the application works.
+> 5. Finish and report
+> Run the normal test suite, Ruff and formatting checks. Report actual results, coverage for the implemented business-rule modules, and any PostgreSQL-specific behaviour not verified against a real PostgreSQL server.
+> Update PROMPTS.md with this actual prompt and its outcome. Do not modify unrelated files, build the API/UI, or commit automatically.
+> Stop after M2 and wait for my review.
+
+**What the assistant did:**
+
+- Implemented the bodies of `app/domain/rules.py` (pure functions; naive datetimes raise `ValueError`, non-integer money raises `TypeError`) and added the domain errors `EntityNotFound`, `ReservationExpired` and `ConflictError`. The existing assumptions were kept; A5 was only clarified for IST midnight, and A12-A16 were added to the README.
+- Added `app/repositories/{members,items,loans,payments}.py`, transaction helpers and a SQLite `BEGIN IMMEDIATE` setting in `app/db.py`, and the services in `app/services/` (`loans.py`, `items.py`, `members.py`, `support.py`). Each service method is one transaction; PostgreSQL row locks (`FOR UPDATE`, member then item) and the existing partial unique index protect against races.
+- Removed the `awaiting_m2` marker (and `tests/markers.py`) so the 116 formerly expected-failure tests now run against the real implementation. Added tests: IST-midnight fee cases, input guards, 132 service tests (including rollback checks) and 6 concurrency tests using threads.
+- Results: `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 384 passed, 0 skipped, 0 xfailed on SQLite; the concurrency tests passed 10 out of 10 repeated runs; coverage is 98% overall with `app/domain` at 100%. The throwaway reference implementation from prompt 4 was not used.
+- Mutation check: 17 deliberate breakages of the rules and services were each caught by at least one test. One of them (removing the member lock in `record_payment`) was caught only by an unrelated not-found test, so no test that ran proves the PostgreSQL-specific lock.
+- Problems found along the way: one test failed on a badly worded error message (fixed in the rule); and a PowerShell read/write round trip corrupted the `₹` character in 8 test files, which I noticed from the output, restored from git and redid with Python in UTF-8, then checked that no corrupted text remained.
+- Not verified: anything on a real PostgreSQL server. Docker Desktop was still not running when checked at the end of this task, so the locking, the concurrency tests and the migration have not been exercised on PostgreSQL. Nothing is committed.
+
+**Outcome:** Pending review.
+
+
+---
+
+## Prompt 8 — M2 review (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> Review the uncommitted M2 implementation before I approve the commit. Do not rewrite working code or add features.
+> Focus on these five checks:
+>
+> 1. Late fees: Trace the real implementation and tests. Confirm the chosen elapsed-24-hour interpretation, rounding, ₹200 cap and replacement-value cap. Verify due-date and IST-midnight boundaries, and confirm the README documents the ambiguity honestly.
+> 2. State consistency: Review reservation expiry, checkout, cancellation, return and maintenance transitions. Confirm item and loan changes are atomic, expired reservations cannot be used, and a returned item in maintenance does not become available.
+> 3. Eligibility and payments: Verify the exact ₹100 threshold, the more-than-14-days overdue rule, the three-active-loan limit, suspension restrictions, overpayment rejection and balance consistency.
+> 4. Concurrency: Inspect the actual PostgreSQL transaction and locking code, including lock ordering and database uniqueness constraints. Identify any race conditions or deadlock risks. Do not claim PostgreSQL concurrency is verified because SQLite tests pass.
+> 5. Repository and tests: Run the full test suite, Ruff and formatting checks. Inspect `git diff` for accidental changes, corrupted UTF-8, secrets, generated files or unrelated edits. Confirm PROMPTS.md accurately records this review prompt and the outcome.
+>
+> Report only concrete findings, with file paths and line numbers. Distinguish verified behaviour from reasoning that has not been tested against PostgreSQL. Do not commit or start M3. Wait for my approval.
+
+**What the assistant did:** read the services, rules, repositories and database helpers; re-ran `ruff check`, `ruff format --check` and `pytest` (384 passed, 0 skipped, 0 expected failures, exit code 0, SQLite); checked `git diff` and the untracked files for corrupted UTF-8, secrets and generated or ignored files (none found; the edited test files only lost their `awaiting_m2` marker lines); and replayed one race at the ORM level with a throwaway script outside the repository. That script uses a plain SQLite engine, so it is not a PostgreSQL run. Findings reported to the user:
+
+1. `LoanService._check_out` reads the loan before taking the locks and `active_loan_after_expiry` reads it again afterwards, but SQLAlchemy returns the already-loaded object without refreshing it. In the replay the second of two competing check-outs failed with `ValueError: due_at is required to judge a CHECKED_OUT item` instead of `InvalidTransition`, and the stored loan stayed correct. SQLite hides this in the normal tests because `BEGIN IMMEDIATE` makes the first read happen after the write lock. On PostgreSQL the concurrent check-out test would probably fail or be flaky; this is reasoning plus the ORM-level replay, not a PostgreSQL run.
+2. The clock is read before the locks are taken, so a request that waits for a lock carries an older timestamp (reasoned, not tested).
+3. No lock timeout is set for PostgreSQL row locks (reasoned, not tested).
+4. README statements that were inaccurate or too strong: "never more than one of each" lock (the global expiry sweep locks several items), "reads the loan again before acting" (see finding 1), and "services reach the database only through `app/repositories`" (`services/members.py` and `services/support.py` call `session.add` and `session.flush` directly).
+5. This prompt had not been logged; it is logged here. The statement in prompt 7's outcome that the row locks protect against races is only partly supported, because of finding 1 and because no PostgreSQL run exists.
+
+Late fees, state transitions, eligibility thresholds and payments were traced and found consistent with the documented assumptions. No code was changed in this step.
+
+**Outcome:** Used. Findings were reported to the user, who decides what to fix.
+
+
+---
+
+## Prompt 9 — Fix the check-out race and correct the README (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> Fix the confirmed M2 concurrency bug and correct the inaccurate README claims. Keep the changes minimal; do not start M3 or add features.
+>
+> 1. Stale loan fix: In `backend/app/services/loans.py`, ensure the check-out operation re-reads the loan's current state after acquiring the required locks. Avoid relying on a SQLAlchemy identity-map cached object. Choose the smallest correct fix consistent with the existing repository pattern.
+> 2. Regression test: Add a deterministic test for the reviewed concurrent double-checkout interleaving. Assert that the second request gets the appropriate domain error (`InvalidTransition` or the intended conflict), never `ValueError`, and that stored loan/item state remains consistent. Do not claim this verifies PostgreSQL locking.
+> 3. README: Correct the claims identified in the review about locking, loan re-reading, and services using only repositories. Describe actual behavior accurately.
+> 4. Verification: Run the full pytest suite, Ruff check, and Ruff format check. Inspect the diff for unrelated changes.
+> 5. Prompt log: `PROMPTS.md` already contains the review prompt as prompt 8. Add this fix prompt and its actual outcome without inventing results.
+>
+> Do not commit. Report the files changed, the regression test's exact scenario and result, test/coverage totals, and any remaining PostgreSQL-only risks. If the regression cannot be reproduced reliably without PostgreSQL, explain that rather than claiming it is verified.
+
+**What the assistant did:**
+
+- Wrote the regression tests first (`backend/tests/services/test_stale_state_races.py`) and ran them against the unfixed code: both failed, the check-out replay with `ValueError: due_at is required to judge a CHECKED_OUT item` and the expiry-sweep replay with a database CHECK-constraint error (`ck_loans_status_matches_timestamps`). The sweep case had only been reasoned about in the review; it is now reproduced.
+- Fixed it in `backend/app/repositories/loans.py` rather than in `services/loans.py`: `active_for_item` now uses `populate_existing`, so every re-read after a lock replaces any copy the session cached earlier. `LoanService._check_out` and the sweep in `services/support.py` both go through that query, so neither needed changes.
+- Corrected the README: the locking description (the global expiry sweep locks several items, in ascending id order), the description of the second loan read, the statement that services use only repositories, and the test and coverage numbers; added the two remaining PostgreSQL-only risks to the known limitations.
+- Results after the fix: the two regression tests pass; `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 386 passed, 0 skipped, 0 expected failures (SQLite); coverage 98% overall, `app/domain` 100%.
+- The replays are deterministic and use no threads: a hook runs the competing request to completion just before the waiting request takes its lock. They run on SQLite here (where `FOR UPDATE` is ignored) and would run the same way on PostgreSQL, but they do not test PostgreSQL's locking. Nothing has been run against a real PostgreSQL server. Nothing is committed.
 
 **Outcome:** Pending review.

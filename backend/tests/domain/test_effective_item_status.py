@@ -4,9 +4,6 @@ import pytest
 
 from app.domain.enums import ItemStatus
 from app.domain.rules import effective_item_status
-from tests.markers import awaiting_m2
-
-pytestmark = awaiting_m2
 
 T0 = datetime(2026, 10, 12, 10, 0, tzinfo=UTC)
 
