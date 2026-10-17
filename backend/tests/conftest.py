@@ -16,7 +16,7 @@ from alembic.config import Config
 from sqlalchemy.orm import Session
 
 from app.config import to_sqlalchemy_url
-from app.db import make_engine
+from app.db import make_engine, make_session_factory
 from app.models import Base
 
 ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"
@@ -61,12 +61,23 @@ def migrated_engine(database_url):
     engine.dispose()
 
 
+def empty_all_tables(engine: sa.Engine) -> None:
+    with engine.begin() as connection:
+        for table in reversed(Base.metadata.sorted_tables):
+            connection.execute(table.delete())
+
+
 @pytest.fixture
 def session(migrated_engine):
     """A session on the migrated schema; every table is emptied again after the test."""
     with Session(migrated_engine) as db_session:
         yield db_session
         db_session.rollback()
-    with migrated_engine.begin() as connection:
-        for table in reversed(Base.metadata.sorted_tables):
-            connection.execute(table.delete())
+    empty_all_tables(migrated_engine)
+
+
+@pytest.fixture
+def session_factory(migrated_engine):
+    """What services use to open their own transactions; every table is emptied after the test."""
+    yield make_session_factory(migrated_engine)
+    empty_all_tables(migrated_engine)

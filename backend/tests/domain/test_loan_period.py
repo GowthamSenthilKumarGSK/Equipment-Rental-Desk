@@ -3,9 +3,6 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.domain.rules import is_overdue, loan_due_at
-from tests.markers import awaiting_m2
-
-pytestmark = awaiting_m2
 
 CHECKED_OUT_AT = datetime(2026, 10, 12, 10, 0, tzinfo=UTC)
 DUE_AT = CHECKED_OUT_AT + timedelta(days=7)

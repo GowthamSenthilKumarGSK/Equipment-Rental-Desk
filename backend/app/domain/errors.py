@@ -9,8 +9,20 @@ class DomainError(Exception):
     """Base class for business-rule violations (as opposed to bad input or system failures)."""
 
 
+class EntityNotFound(DomainError):
+    """The member, item or loan the request refers to does not exist."""
+
+
 class InvalidTransition(DomainError):
     """The requested action is not allowed from the current item or loan state."""
+
+
+class ReservationExpired(InvalidTransition):
+    """The 48-hour hold ran out before the reservation was checked out or cancelled."""
+
+
+class ConflictError(DomainError):
+    """A concurrent request changed the same record first; the caller may retry."""
 
 
 class MemberBlocked(DomainError):

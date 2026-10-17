@@ -6,7 +6,6 @@ from app.domain.enums import ACTIVE_LOAN_STATUSES, ItemStatus, LoanStatus, Membe
 from app.models import Item, Loan, Member, MemberSuspension, Payment
 from app.seed import delete_all_rows, is_seeded, seed_database
 from tests.builders import NOW
-from tests.markers import awaiting_m2
 
 
 def count(session, model) -> int:
@@ -119,7 +118,6 @@ def test_seed_phone_numbers_cannot_belong_to_real_people(session):
     assert phones and all(phone.startswith("+91 00000 ") for phone in phones)
 
 
-@awaiting_m2
 def test_seeded_fees_match_the_late_fee_rule(session):
     from app.domain.rules import calculate_late_fee_paise
 

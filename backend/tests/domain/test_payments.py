@@ -2,9 +2,6 @@ import pytest
 
 from app.domain.errors import InvalidPaymentAmount, PaymentExceedsBalance
 from app.domain.rules import validate_payment
-from tests.markers import awaiting_m2
-
-pytestmark = awaiting_m2
 
 
 def test_payment_equal_to_balance_is_accepted():

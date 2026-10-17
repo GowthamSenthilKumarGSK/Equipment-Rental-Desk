@@ -3,9 +3,6 @@ import pytest
 from app.domain.enums import ItemAction, ItemStatus, LoanAction, LoanStatus
 from app.domain.errors import InvalidTransition
 from app.domain.rules import next_item_status, next_loan_status
-from tests.markers import awaiting_m2
-
-pytestmark = awaiting_m2
 
 A = ItemStatus
 ACT = ItemAction

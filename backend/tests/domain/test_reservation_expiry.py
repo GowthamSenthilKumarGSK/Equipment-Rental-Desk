@@ -3,9 +3,6 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.domain.rules import is_reservation_expired, reservation_expires_at
-from tests.markers import awaiting_m2
-
-pytestmark = awaiting_m2
 
 RESERVED_AT = datetime(2026, 10, 12, 10, 0, tzinfo=UTC)
 

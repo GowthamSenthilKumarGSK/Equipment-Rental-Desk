@@ -9,9 +9,6 @@ from app.domain.rules import (
     ensure_within_loan_limit,
     member_block_reasons,
 )
-from tests.markers import awaiting_m2
-
-pytestmark = awaiting_m2
 
 ACTIVE = MemberStatus.ACTIVE
 SUSPENDED = MemberStatus.SUSPENDED
