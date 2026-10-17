@@ -153,6 +153,19 @@ def effective_item_status(
     return stored
 
 
+def effective_loan_status(
+    status: LoanStatus, *, reserved_at: datetime, now: datetime
+) -> LoanStatus:
+    """A loan's status at `now`: a RESERVED loan whose hold has lapsed reads as EXPIRED.
+
+    Overdue is not a loan status; it is CHECKED_OUT with `is_overdue(due_at, now)`.
+    """
+    _require_aware(reserved_at, now)
+    if status is LoanStatus.RESERVED and is_reservation_expired(reserved_at, now):
+        return LoanStatus.EXPIRED
+    return status
+
+
 # --- state machines ---------------------------------------------------------------------------
 
 _ITEM_TRANSITIONS: dict[tuple[ItemStatus, ItemAction], ItemStatus] = {

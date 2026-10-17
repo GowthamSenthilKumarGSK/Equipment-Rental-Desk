@@ -21,6 +21,10 @@ class ReservationExpired(InvalidTransition):
     """The 48-hour hold ran out before the reservation was checked out or cancelled."""
 
 
+class DeletionBlocked(DomainError):
+    """A member or item that has loans, payments or suspensions cannot be deleted."""
+
+
 class ConflictError(DomainError):
     """A concurrent request changed the same record first; the caller may retry."""
 

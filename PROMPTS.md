@@ -18,7 +18,11 @@ Rules for this file:
 | 6   | 2026-10-17 | M1        | Claude Code (Sonnet 5.5)  | Used: three review findings fixed (see below); M1 committed afterwards (0abe7cf) |
 | 7   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Pending review: M2 implemented and tested on SQLite only; uncommitted |
 | 8   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Used: read-only review of M2; one likely PostgreSQL-only bug in `check_out` and some documentation inaccuracies reported, nothing fixed yet |
-| 9   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Pending review: stale-loan bug fixed with 2 regression tests, README claims corrected; uncommitted |
+| 9   | 2026-10-17 | M2        | Claude Code (Sonnet 5.5)  | Used: stale-loan bug fixed with 2 regression tests, README claims corrected; M2 then committed (2b45b98) |
+| 10  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Pending review: REST API implemented and tested on SQLite only; uncommitted |
+| 11  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Used: read-only review of M3; one confirmed serious bug (extreme X-Test-Clock values), some documentation errors and PostgreSQL-only concerns reported; fixes made in prompt 12 |
+| 12  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Pending review: clock range, NUL input, ALLOW_TEST_CLOCK pass-through and README corrections made; SQLite only; uncommitted |
+| 13  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Pending review: error logs no longer carry exception messages or tracebacks; regression tests added; SQLite only; uncommitted |
 
 ---
 
@@ -348,5 +352,139 @@ Late fees, state transitions, eligibility thresholds and payments were traced an
 - Corrected the README: the locking description (the global expiry sweep locks several items, in ascending id order), the description of the second loan read, the statement that services use only repositories, and the test and coverage numbers; added the two remaining PostgreSQL-only risks to the known limitations.
 - Results after the fix: the two regression tests pass; `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 386 passed, 0 skipped, 0 expected failures (SQLite); coverage 98% overall, `app/domain` 100%.
 - The replays are deterministic and use no threads: a hook runs the competing request to completion just before the waiting request takes its lock. They run on SQLite here (where `FOR UPDATE` is ignored) and would run the same way on PostgreSQL, but they do not test PostgreSQL's locking. Nothing has been run against a real PostgreSQL server. Nothing is committed.
+
+**Outcome:** Used. M2 was committed afterwards (2b45b98).
+
+---
+
+## Prompt 10 — M3 REST API (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> Implement M3: the REST API for the Equipment Rental Desk. First inspect the existing code, especially the M1 models/migrations and M2 services, rules, repositories, tests, README, and PROMPTS.md. Reuse the existing business logic; do not duplicate rules in API endpoints or rewrite working code.
+> Implement:
+>
+> 1. Member and item CRUD with appropriate validation.
+> 2. Reserve, check out, return, and cancel reservation endpoints.
+> 3. Record payments, list overdue loans, and retrieve a member statement containing loan history, fees, payments, and current balance.
+> 4. Consistent HTTP error mapping for missing entities, invalid transitions, expired reservations, conflicts, ineligible members, and malformed requests. Never expose raw tracebacks or database errors to clients.
+> 5. The reviewer test-clock override via `X-Test-Clock`, with normal real-time behavior when the header is absent. Validate timestamps and keep time handling consistent with the existing UTC implementation.
+> 6. API tests using the actual application and database fixtures. Cover successful operations, invalid transitions, missing IDs, malformed inputs, eligibility failures, payments, statements, overdue results, and test-clock behavior.
+>
+> Requirements:
+>
+> * Follow the existing project architecture and naming conventions.
+> * Keep all rental rules in the M2 services/domain layer.
+> * Use response schemas and appropriate HTTP status codes.
+> * Add structured logging for relevant failures without logging sensitive data.
+> * Update README API documentation and PROMPTS.md with this actual prompt and outcome.
+> * Do not add frontend features, stretch features, or unrelated refactors.
+> * Do not commit.
+>
+> Run the full test suite, Ruff check, Ruff format check, and coverage report. Report the endpoint list, error mapping, files changed, test results, coverage, and any unresolved issues. Do not claim PostgreSQL behavior is verified unless a real PostgreSQL run succeeds.
+
+**What the assistant did:**
+
+- Added the HTTP layer: routers for members, items and loans (`app/api/`), request and response schemas (`app/schemas/`), dependencies that build the services and the clock per request, one error shape with a mapping from every domain error to a status and code, a pure-ASGI middleware (request id, one access-log line per request, last-resort 500), and JSON logging (`app/logging_config.py`). No rental rule is in a route.
+- Added what the endpoints needed underneath, without changing existing behaviour: repository queries, read-result types (`app/services/views.py`), service methods for member and item create/read/update/delete, the member statement and the overdue list, a pure `effective_loan_status` rule, a `DeletionBlocked` error, an `IST` constant, the `ALLOW_TEST_CLOCK` setting, and `hide_parameters` on the database engine so bound values stay out of error messages.
+- `X-Test-Clock` is read per request, must be ISO-8601 with a UTC offset, and is converted to UTC; without it the real clock is used.
+- Writing the tests found a real bug before any user could: an id such as 99999999999999999999 would overflow the database driver and return a 500. Ids and offsets are now bounded and refused with a 422.
+- Results: `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 611 passed, 0 skipped, 0 expected failures (SQLite); coverage 99% overall. The same warning as before (a Starlette deprecation about `httpx`) is the only one.
+- Mutation check on the API layer: 16 of 16 deliberate breakages (for example ignoring the test-clock header, accepting float money, accepting unknown fields, `<=` instead of `<` on the overdue list, echoing submitted values in validation errors, leaking exception text, logging the query string) were each caught by at least one test (no survivors).
+- Not verified: anything on a real PostgreSQL server (Docker Desktop is still not running). Nothing is committed.
+
+**Outcome:** Pending review.
+
+
+---
+
+## Prompt 11 — M3 review (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> Review the uncommitted M3 API implementation before commit. Do not add features or start M4.
+> Inspect the actual code and tests, not just the previous report.
+>
+> 1. Business rules: Verify each API operation delegates to M2 services and preserves rental rules, suspension, maintenance, reservation expiry, fees, eligibility, and payment limits.
+> 2. API correctness: Check CRUD behavior, status codes, response schemas, malformed inputs, oversized IDs, deletion constraints, and error mapping. Confirm unexpected exceptions never expose internal details.
+> 3. Test clock: Verify `X-Test-Clock` is request-scoped, disabled by default/configuration as documented, and applied consistently to all time-dependent routes. Check that ordinary requests use real UTC time.
+> 4. Logging: Check request IDs and structured logs, ensuring phone numbers, names, payment notes, submitted values, query strings, and tracebacks are not returned to clients or inadvertently logged as sensitive data.
+> 5. Data and transactions: Check whether multi-step API operations are atomic, whether report queries are correct, and whether any endpoint bypasses service-layer protections.
+> 6. Documentation: Verify the endpoint list, error-code table, assumptions A17–A21, README examples, and PROMPTS.md against the actual code.
+> 7. Regression and hygiene: Run the full tests, Ruff check, format check, inspect the complete diff, and check for secrets, BOMs, accidental files, or unrelated edits.
+>
+> Report only concrete findings with file paths and line numbers, separating confirmed bugs from concerns that need real PostgreSQL testing. Do not fix anything yet, do not commit, and do not claim PostgreSQL is verified.
+
+**What the assistant did:** read the API, schema, error, middleware, logging and service code; re-ran `ruff check`, `ruff format --check` and `pytest` (611 passed, 0 skipped, 0 expected failures, exit 0, SQLite only); scanned the diff for corrupted UTF-8, BOMs, secrets and generated files (none; the only match is the documented local-development database password); compared the README endpoint list with the live OpenAPI document (22 of 22 match); and probed the real app on SQLite with throwaway scripts outside the repository. Findings reported to the user:
+
+1. Confirmed bug: an extreme `X-Test-Clock` value (for example `9999-12-31T23:59:59Z`) makes a reservation return 500 after it has already been committed, and the stored reservation then makes `GET /items`, item detail, the member statement and maintenance return 500 for every caller, with cancel refused at normal time. Offsets that push the instant outside the representable range (`0001-01-01T00:00:00+05:30`) return 500 on any route. Reproduced on SQLite; not PostgreSQL-specific.
+2. Documentation: logs go to stderr, not stdout as the README says; `ALLOW_TEST_CLOCK` is not passed through by `docker-compose.yml` or `render.yaml`, so the documented switch has no effect there; the generic `http_error` code is missing from the README error table; the claim that the engine's hidden parameters keep names and phone numbers out of server-side database errors is too strong for PostgreSQL.
+3. Concerns needing a real PostgreSQL run (reasoned, not tested): a NUL character in a name, note or search text is accepted on SQLite but probably fails on PostgreSQL and would return 500; PostgreSQL error details can contain row values, which the database-error log line would include; list ordering by name can differ between SQLite and PostgreSQL collations.
+4. Minor: the maintenance endpoints commit and then read the item in a second transaction; the statement carries an unused `longest_overdue` field; a trailing-slash request gets a 307 redirect that is not in the error shape.
+5. This prompt had not been logged; it is logged here.
+
+Business-rule delegation, status codes and error mapping for the tested inputs, oversized ids, deletion constraints, request-scoped test clock, ordinary requests using the real UTC clock, request ids, and the absence of names, phone numbers, notes, submitted values and query strings in logs were checked and held up. No code was changed in this step.
+
+**Outcome:** Used. The findings were fixed in prompt 12.
+
+---
+
+## Prompt 12 — Fix the test-clock bug and the review's other findings (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> Fix the confirmed M3 test-clock bug and the README/configuration inaccuracies. Do not commit or start M4.
+>
+> 1. Bound test-clock timestamps: In `backend/app/api/deps.py`, validate the parsed timestamp before converting it to UTC or passing it to services. Use a documented sane range (for example, years 2000–2200), and return HTTP 400 with `invalid_test_clock` for timestamps outside it or when UTC conversion would overflow. Ensure subsequent date arithmetic cannot overflow for accepted timestamps.
+> 2. Regression tests: Add API tests for `9999-12-31T23:59:59Z`, `0001-01-01T00:00:00+05:30`, `9999-12-31T23:59:59-05:00`, and a valid in-range timestamp. Assert invalid values return 400 before any database mutation. Also verify normal requests still work afterward and existing reservations remain usable. Test the clock-disabled configuration.
+> 3. Configuration propagation: Ensure `ALLOW_TEST_CLOCK` is actually passed through Docker Compose and represented appropriately in Render configuration, so setting it to `false` works in deployed environments. Preserve the existing documented reviewer-clock behavior unless a change is necessary; explain the security implications clearly.
+> 4. README corrections: Fix the logging destination (stderr if unchanged), add the missing `http_error` code, and correct the claim about database errors and sensitive values in server logs. Document the accepted test-clock range and the unauthenticated clock override limitation.
+> 5. PostgreSQL input safety: Reject NUL characters in relevant text inputs (names, notes, search strings, and other PostgreSQL text fields) with a consistent 4xx response, rather than relying on a database error. Add API tests.
+> 6. Verification: Run the full pytest suite, Ruff check, Ruff format check, and coverage. Inspect the complete diff for unrelated changes and accidental encoding issues. Update `PROMPTS.md` with the actual fix prompt and outcome.
+>
+> Do not claim PostgreSQL behavior has been verified; no real PostgreSQL run is available yet. Report the exact regression results, files changed, test count, coverage, and remaining risks. Do not commit.
+
+**What the assistant did:**
+
+- `app/api/deps.py`: `X-Test-Clock` is now checked against 2000-01-01 to 2200-01-01 UTC (inclusive) by comparing the instants directly, before any conversion, so no extreme value or offset can overflow; outside it the request is refused with 400 `invalid_test_clock` before any service runs. Adding 48 hours, 7 days or a late fee to an accepted time cannot overflow. A first version also had an `except OverflowError` around the comparison; it was unreachable (comparing aware datetimes cannot overflow), so it was removed.
+- Before the fix, a probe against the real app on SQLite showed `9999-12-31T23:59:59Z` returning 500 after committing the reservation and then breaking `GET /items`, item detail, the statement and maintenance for everyone; after the fix every out-of-range value in the prompt returns 400 and in-range values work.
+- NUL (U+0000) is refused with 422 in names, phone, categories, notes, suspension reasons, payment notes and the search and category query parameters (`NoNul` in `app/schemas/common.py`). Before this, SQLite accepted it (201), which is what PostgreSQL would have rejected with a 500.
+- `docker-compose.yml` now passes `ALLOW_TEST_CLOCK` (default `true`) and `render.yaml` sets it explicitly to `"true"`, so the documented `false` setting reaches the container. `docker compose config` resolves it; Docker itself is not running, so no container was started. `pyyaml` was added (pinned) to `requirements-dev.txt` for the tests that read these files.
+- README: logs are on stderr; `http_error` is in the error table; the claim about database errors is corrected (the server's own message can contain values on PostgreSQL, unverified); the accepted range, the NUL rule and the security implications of an unauthenticated clock override are documented; test and coverage numbers updated.
+- Tests added: out-of-range and in-range clock values (nothing written, the app and existing reservations still work, whole rentals at both ends of the range), the disabled configuration for every header value, NUL in every text input, and the deployment files and environment setting.
+- Results: `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 674 passed, 0 skipped, 0 expected failures (SQLite); coverage 99% overall, `app/api` 100%.
+- Mutation check: 11 deliberate breakages (remove the range check, widen either bound, convert to UTC before checking, allow NUL in each kind of text, drop the setting from Compose or Render) were each caught. One was initially reported as surviving only because of the redundant `except OverflowError` above; it is caught after that was removed.
+- Not verified: anything on a real PostgreSQL server (Docker Desktop is still not running), including that NUL would really have failed there and what PostgreSQL's error details contain. Nothing is committed.
+
+**Outcome:** Used. A further security fix followed in prompt 13.
+
+---
+
+## Prompt 13 — Stop logging exception messages and database error details (2026-10-17, Claude Code)
+
+**Prompt (verbatim):**
+
+> Make one focused security fix before the M3 commit. Do not start M4 or refactor the logging system.
+> In `backend/app/api/errors.py`, inspect the unexpected/database exception handler. It currently logs the full exception message and traceback, which may contain database row values or personal data on PostgreSQL.
+> Change the logging so that:
+>
+> * The log retains the request ID, exception class, and useful diagnostic context.
+> * It does not log raw database exception messages or SQL parameters that may contain personal data.
+> * The client still receives the existing generic 500 response with its request ID.
+> * Unexpected non-database errors remain diagnosable without exposing submitted values.
+>
+> Add regression tests that simulate a database exception containing a fake name and phone number, then assert neither appears in the captured logs or client response. Preserve the existing request ID and error-response behavior.
+> Run the full test suite, Ruff check, Ruff format check, and coverage. Update PROMPTS.md with the actual prompt and result. Do not commit. Report the exact files changed and any trade-offs in diagnostic detail.
+
+**What the assistant did:**
+
+- Found two places that logged exception text: the database-error handler in `app/api/errors.py` (full exception with traceback) and the last-resort handler in `app/api/middleware.py` (`logger.exception`). Both now log through one new helper, `safe_exception_fields`, and pass no `exc_info`, so no formatted traceback (whose last line is the message) is written.
+- What is logged: `exception_type`; `caused_by` (classes of the exceptions it came from, at most 5); `where` (innermost frame in our own code) and `stack` (file, line, function, at most 40 frames); for database errors `db_error_type` (the driver's exception class), `db_error_code` (SQLSTATE on PostgreSQL, error name on SQLite) and, when the driver reports them, `db_constraint`, `db_table`, `db_column`; plus the existing `request_id`, `error_code`, `status`, `method`, `path`. What is not logged: any exception message, SQL statement or parameters.
+- The client response is unchanged: the generic 500 `internal_error` with the request id (tests assert this).
+- Tests added in `tests/api/test_error_log_redaction_api.py`: a database exception shaped like PostgreSQL's (message with a "Failing row" line, SQL and parameters all containing a fake name and phone) never reaches the response or any log line, while its class, SQLSTATE, constraint and table do; a genuine SQLite constraint failure with the fake data bound as parameters; unexpected errors whose messages hold the fake data (plain, a KeyError, chained exceptions, and a pydantic validation error that quotes its input); and unit tests of the helper. Two existing tests that expected a logged traceback were changed to the new contract.
+- Results: `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 688 passed, 0 skipped, 0 expected failures (SQLite); coverage 99% overall, `app/api` 100% (`errors.py` and `middleware.py` 100%).
+- Mutation check: 8 ways of bringing the leak back (traceback logged again in either place, exception message, driver message, or SQL and parameters added to the fields, location dropped, SQLSTATE dropped, database log fields dropped) were each caught by at least one test.
+- README section 9 and the known limitations were updated, including the trade-off: a log line now tells you the failing class, location and constraint but not the message or value, so some failures must be reproduced locally. A residual remains outside our code: if an error occurs after the response has started, the middleware re-raises and uvicorn logs it with its own traceback, which includes the message (the re-raise is tested; uvicorn's logging is not).
+- Not verified: anything on a real PostgreSQL server, including the exact attributes psycopg exposes for the SQLSTATE and constraint names; the tests use stand-ins for those and a real SQLite failure. Nothing is committed.
 
 **Outcome:** Pending review.

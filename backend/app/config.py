@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed browser origins.
     cors_origins: str = "http://localhost:5173"
     log_level: str = "INFO"
+    # Lets a reviewer set "now" with the X-Test-Clock header. Set to false to refuse the header.
+    allow_test_clock: bool = True
 
     @property
     def sqlalchemy_url(self) -> str:

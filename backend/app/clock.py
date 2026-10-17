@@ -1,7 +1,10 @@
 """Injectable clock so time-based rules can be tested without waiting."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Protocol
+
+# India has no daylight saving, so a fixed offset is exact (and needs no timezone database).
+IST = timezone(timedelta(hours=5, minutes=30), "IST")
 
 
 class Clock(Protocol):
