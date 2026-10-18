@@ -55,3 +55,87 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build
+
+  # Runs the real deployment artefacts: validates the Compose file, builds both images, then starts
+  # the backend image (the same CMD Render runs) against a fresh PostgreSQL and checks that it
+  # migrates, seeds an empty database, runs as a non-root user, reports healthy, and on restart
+  # neither re-seeds nor overwrites changes. Needs Docker only on the CI runner, not locally.
+  container:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci # throwaway CI database, not a real secret
+          POSTGRES_DB: rental_desk
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d rental_desk"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      API: http://localhost:8000
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docker-compose.yml
+        run: docker compose config --quiet
+      - name: Build the backend image
+        run: docker build -t rental-desk-api ./backend
+      - name: Build the frontend image
+        run: docker build --build-arg VITE_API_URL=http://localhost:8000 -t rental-desk-ui ./frontend
+      - name: Start the backend container against PostgreSQL
+        run: |
+          docker run -d --name api --network host \
+            -e DATABASE_URL=postgresql://ci:ci@localhost:5432/rental_desk \
+            -e CORS_ORIGINS=http://localhost:5173 \
+            -e SEED_ON_START=true \
+            -e PORT=8000 \
+            rental-desk-api
+      - name: Wait until the container reports healthy
+        run: |
+          for i in $(seq 1 40); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' api)
+            echo "health: $status"
+            [ "$status" = "healthy" ] && exit 0
+            [ "$(docker inspect --format '{{.State.Running}}' api)" = "true" ] || { echo "container stopped"; exit 1; }
+            sleep 5
+          done
+          echo "never became healthy"; exit 1
+      - name: Check the first start (migrated, seeded, not root)
+        run: |
+          test "$(docker exec api id -u)" != "0"
+          curl -fsS "$API/health"
+          test "$(curl -fsS "$API/members?limit=1" | jq '.total')" = "10"
+          test "$(curl -fsS "$API/items?limit=1" | jq '.total')" = "13"
+          docker logs api > first-start.log 2>&1
+          grep -q "Migrations are up to date" first-start.log
+          grep -q "Seeded sample data" first-start.log
+      - name: Change some data, then restart the container
+        run: |
+          id=$(curl -fsS "$API/members?q=Kavita" | jq '.results[0].id')
+          curl -fsS -X PATCH "$API/members/$id" -H "Content-Type: application/json" -d '{"name":"Edited Name"}'
+          docker restart api
+          # Ready means Docker says healthy AND the API answers, so a stale health status from
+          # before the restart cannot let the next step run too early.
+          for i in $(seq 1 40); do
+            if [ "$(docker inspect --format '{{.State.Health.Status}}' api)" = "healthy" ] &&
+               curl -fsS "$API/health" > /dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "did not become healthy after restart"; exit 1
+      - name: Check the restart neither re-seeded nor reset anything
+        run: |
+          test "$(curl -fsS "$API/members?limit=1" | jq '.total')" = "10"
+          test "$(curl -fsS "$API/items?limit=1" | jq '.total')" = "13"
+          test "$(curl -fsS "$API/members?q=Edited" | jq '.total')" = "1"
+          test "$(curl -fsS "$API/members?q=Kavita" | jq '.total')" = "0"  # the seed row is not back
+          docker logs api > all.log 2>&1
+          grep -q "seeding skipped" all.log
+      - name: Container logs
+        if: always()
+        run: docker logs api

@@ -24,7 +24,11 @@ def rupees(amount: int) -> int:
 
 
 def is_seeded(session: Session) -> bool:
-    return session.scalar(sa.select(sa.func.count(Member.id))) > 0
+    """True if any member or item exists. Either one means the database is not empty, so loading
+    the sample data on top would mix it with someone's real records."""
+    members = session.scalar(sa.select(sa.func.count(Member.id)))
+    items = session.scalar(sa.select(sa.func.count(Item.id)))
+    return members > 0 or items > 0
 
 
 def delete_all_rows(session: Session) -> None:
@@ -48,7 +52,7 @@ def _loan_out(member, item, checked_out_at, *, returned_at=None, fee=0):
 
 
 def seed_database(session: Session, now: datetime) -> bool:
-    """Insert the sample data. Returns False (and changes nothing) if members already exist."""
+    """Insert the sample data. Returns False (and changes nothing) if any member or item exists."""
     if is_seeded(session):
         return False
 

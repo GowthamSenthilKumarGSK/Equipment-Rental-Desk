@@ -1,4 +1,6 @@
 # Render Blueprint: API + Postgres. The frontend is deployed separately on Vercel (frontend/vercel.json).
+# The API container (backend/Dockerfile) waits for the database, runs the Alembic migrations, loads
+# the sample data only if the database is empty, and then serves. It never resets data.
 services:
   - type: web
     name: rental-desk-api
@@ -13,12 +15,16 @@ services:
           name: rental-desk-db
           property: connectionString
       - key: CORS_ORIGINS
-        sync: false # set in the Render dashboard to the Vercel URL
+        sync: false # set in the Render dashboard to the exact Vercel origin, e.g. https://<project>.vercel.app
       - key: LOG_LEVEL
         value: INFO
-      # Reviewer test clock. "true" lets anyone who can reach the API send X-Test-Clock (the API has
-      # no authentication), so set it to "false" and redeploy once the review is over. A value set
-      # only in the dashboard is overwritten the next time this blueprint is synced.
+      # Migrate on start, then seed only an empty database. Safe on every restart (idempotent).
+      - key: SEED_ON_START
+        value: "true"
+      # Reviewer test clock. The assignment asks for a way for a reviewer to set "today" on the live
+      # instance, so this stays "true" for the review. The API has no authentication, so anyone who can
+      # reach it can send X-Test-Clock: set it to "false" and redeploy once the review is over. A value
+      # set only in the dashboard is overwritten the next time this blueprint is synced.
       - key: ALLOW_TEST_CLOCK
         value: "true"
 
