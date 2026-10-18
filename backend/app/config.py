@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     # Lets a reviewer set "now" with the X-Test-Clock header. Set to false to refuse the header.
     allow_test_clock: bool = True
+    # Read only by the container start-up (`python -m app.serve`): load the sample data if, and only
+    # if, the database is empty. It never resets anything. Off unless a deployment turns it on.
+    seed_on_start: bool = False
 
     @property
     def sqlalchemy_url(self) -> str:

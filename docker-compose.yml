@@ -26,6 +26,9 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       # Reviewer test clock (X-Test-Clock header). Set ALLOW_TEST_CLOCK=false in .env to refuse it.
       ALLOW_TEST_CLOCK: ${ALLOW_TEST_CLOCK:-true}
+      # The backend migrates on start and loads the sample data only into an empty database.
+      # Set SEED_ON_START=false in .env to start with no sample data. It never resets anything.
+      SEED_ON_START: ${SEED_ON_START:-true}
     ports:
       - "8000:8000"
     depends_on:
@@ -41,7 +44,8 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy # the image's HEALTHCHECK (GET /health)
 
 volumes:
   pgdata:

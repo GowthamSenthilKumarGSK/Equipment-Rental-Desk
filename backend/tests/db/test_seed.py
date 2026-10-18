@@ -48,6 +48,32 @@ def test_seeding_twice_does_not_duplicate_data(session):
     assert is_seeded(session)
 
 
+def test_a_database_with_only_items_is_not_empty_and_is_left_alone(session):
+    session.add(
+        Item(name="Hand-entered drill", category="Power Tools", replacement_value_paise=500_000)
+    )
+    session.flush()
+
+    assert is_seeded(session)
+    assert seed_database(session, NOW) is False
+    assert count(session, Item) == 1  # nothing was added next to the existing record
+    assert count(session, Member) == 0
+
+
+def test_a_database_with_only_members_is_not_empty_and_is_left_alone(session):
+    session.add(Member(name="Hand Entered", phone="+91 00000 29999", join_date=NOW.date()))
+    session.flush()
+
+    assert is_seeded(session)
+    assert seed_database(session, NOW) is False
+    assert count(session, Member) == 1
+    assert count(session, Item) == 0
+
+
+def test_an_empty_database_is_not_seeded_yet(session):
+    assert is_seeded(session) is False
+
+
 def test_reset_clears_everything_so_seed_can_run_again(session):
     seed_database(session, NOW)
 

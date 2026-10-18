@@ -25,7 +25,10 @@ Rules for this file:
 | 13  | 2026-10-17 | M3        | Claude Code (Sonnet 5.5)  | Used: error logs no longer carry exception messages or tracebacks; regression tests added; SQLite only; committed with M3 (d5029e4) |
 | 14  | 2026-10-17 | M4        | Claude Code (Sonnet 5.5)  | Edited: React UI built; review (prompt 15) found three UI bugs and a weak test, fixed in prompt 16; its live-check description was also corrected there |
 | 15  | 2026-10-17 | M4        | Claude Code (Sonnet 5.5)  | Used: read-only review of M4; 3 confirmed bugs, 1 test that did not test what it said, several smaller risks reported; fixed in prompt 16 |
-| 16  | 2026-10-17 | M4        | Claude Code (Sonnet 5.5)  | Pending review: review findings fixed (see below); frontend and backend suites pass on SQLite only; uncommitted |
+| 16  | 2026-10-17 | M4        | Claude Code (Sonnet 5.5)  | Used: review findings fixed (see below); suites passed on SQLite only; M4 committed afterwards (9d4930e) |
+| 17  | 2026-10-18 | M5        | Claude Code (Sonnet 5.5)  | Used: read-only audit; found nothing migrated or seeded at deploy, no SUBMISSION.md/coverage.txt/tag, repo apparently private, no CI result visible |
+| 18  | 2026-10-18 | M5        | Claude Code (Sonnet 5.5)  | Used: start-up, health check, non-root image, CI container job, tests and README deployment section written; tested on SQLite and without Docker; reviewed in prompt 19 and committed as the M5 commit |
+| 19  | 2026-10-18 | M5        | Claude Code (Sonnet 5.5)  | Used: pre-commit review of M5 (no serious issue; CI job and two-instance wording tightened); local checks passed; committed as the M5 commit, not pushed |
 
 ---
 
@@ -595,4 +598,98 @@ Business-rule delegation, status codes and error mapping for the tested inputs, 
 - **Results.** Frontend: `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm test` (176 passed in 11 files) and `npm run build` pass. Backend: `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 773 passed, 0 skipped, 0 expected failures (SQLite), coverage 99%.
 - **Not fixed / not verified.** The two small behaviours (buttons re-enabling before the re-read; a failed re-read replacing the page) are left and listed in README section 11. The OpenAPI/frontend `ItemAction` difference is left (harmless, covered by a domain test). **PostgreSQL has still not been run**: there is no Docker daemon and no native PostgreSQL here, so the migration, locking and concurrency behaviour remain unverified. **No GitHub Actions result was seen**, so nothing is claimed about CI passing. Nothing is committed.
 
-**Outcome:** Pending review.
+**Outcome:** Used. M4 was committed together with these fixes as 9d4930e.
+
+---
+
+## Prompt 17 — M5 audit (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Start M5 with a verification-only audit. Do not change code or commit anything yet.
+>
+> 1. Git status: Report the latest commit hash and message, recent milestone history, and whether the working tree is clean. Confirm M4 is committed.
+> 2. GitHub CI: Inspect `.github/workflows/ci.yml` and determine whether the PostgreSQL service job runs migrations and the full database-backed test suite against PostgreSQL. Check whether frontend tests run in CI.
+> 3. Actual CI result: If GitHub Actions results are accessible through existing tools or `gh`, inspect the latest run and report its status and commit SHA. Do not claim a pass based only on the workflow file. If results aren't accessible, say so.
+> 4. Deployment configuration: Inspect `Dockerfile`s, `docker-compose.yml`, `render.yaml`, `.env.example` files, migration/seed scripts, CORS settings, and frontend API URL configuration. Identify concrete deployment blockers.
+> 5. Submission requirements: Compare the current README, `SUBMISSION.md`, coverage-report setup, and Git milestone history against the original assignment instructions. List missing deliverables.
+> 6. Safety: Do not expose environment values or secrets; report variable names only.
+>
+> Return a prioritized list of findings with file paths, distinguish verified facts from unverified assumptions, and recommend the smallest next action. Do not modify files, run migrations against any external database, deploy, or commit.
+
+**What the assistant did:** read-only; no file was changed and nothing was deployed or committed.
+
+- Git: HEAD `9d4930e` ([M4]), working tree clean, `main` equal to `origin/main` (checked with `git ls-remote`); five commits, all on 2026-10-17; no tags.
+- CI file: a `postgres:16-alpine` service, a second `pytest` run with `TEST_DATABASE_URL` (the Alembic migration and every test using the database fixtures run on PostgreSQL), and frontend `npm test`; two test files always use SQLite; no Docker build in CI.
+- CI result: not accessible. `gh` is not installed; the unauthenticated GitHub web and API answered 404 for the repository (so it is probably private) and the browser pane was not signed in. No run status was available and none was claimed.
+- Blockers found: nothing ran migrations or seeding at deploy (the Dockerfile `CMD` was only `uvicorn`, Compose had no command, `render.yaml` no start or pre-deploy command), so a fresh deployment would have had no tables (inferred, not run); `CORS_ORIGINS` and Vercel settings are manual and undocumented; re-seeding the hosted database had no path.
+- Missing deliverables: `SUBMISSION.md`, a committed `coverage.txt`, the `v1.0` tag, live links and README 5a; commit subjects did not follow the Conventional Commits format (no `type(scope):`; one 80 characters long; "Commit M0").
+- Assignment text re-read from the PDFs' text in the earlier session record (the PDFs themselves could not be rendered here).
+- No secrets or junk files found in history (pattern scan; values were not printed).
+
+**Outcome:** Used. M5 implementation followed in prompt 18.
+
+---
+
+## Prompt 18 — M5 implementation, part 1 (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Begin M5 implementation after the audit. Keep changes minimal and do not deploy yet.
+>
+> 1. Wire database initialization into the deployment process safely: migrations must run before the app serves requests, and seeding must be idempotent and must not reset existing data. Do not run `--reset` automatically.
+> 2. Add an appropriate health check to the backend container and avoid running the application as root if this can be done without breaking permissions or startup.
+> 3. Keep the hosted frontend test-clock panel disabled. Configure the production API with `ALLOW_TEST_CLOCK=false` unless the assignment demonstrably requires a public reviewer clock; document a safer way to test time-dependent rules.
+> 4. Add tests for the deployment/startup command and seed idempotency where practical. Extend CI to validate deployment configuration if this can be done without requiring Docker locally.
+> 5. Update README deployment instructions with exact provider settings, environment variable names, migration/seed steps, and limitations. Do not invent live URLs.
+> 6. Inspect the assignment requirements again and prepare a concise checklist for the remaining `SUBMISSION.md`, coverage summary, public-repository decision, and final tag.
+>
+> Run all relevant tests and checks, update PROMPTS.md with the actual prompt and result, and report the changed files and any risks. Do not commit or deploy until reviewed. Do not claim PostgreSQL has passed until a real CI run confirms it.
+> Important: inspect the existing `db_setup` and seed behavior before changing startup. Avoid creating a fragile one-line shell command or automatically reseeding a hosted database on every restart.
+
+**What the assistant did:**
+
+- **Inspected first:** `app/db_setup.py` (migrate, then seed-if-empty, `--reset` only by flag), `app/seed.py` (`is_seeded` looked only at members), the existing tests of both, `render.yaml`, Compose, the Dockerfile and the deployment-file tests.
+- **1, safe start-up.** New `app/serve.py`, the image's `CMD` (`python -m app.serve`), replaces the bare `uvicorn` command: wait for the database (10 tries, 3 s apart; only the error class is logged), `alembic upgrade head`, seed only if `SEED_ON_START=true` and the database is empty, then `uvicorn.run` in the same process. If preparing fails the process exits and the API never starts. It is a small Python module rather than a shell one-liner so it can be tested. `db_setup` was split into `run_migrations`, `seed_if_empty` and `reset_and_seed`; the command line behaves as before and `--reset` stays manual. `is_seeded` now treats any member **or item** as "not empty", so sample data is never added next to hand-entered records. New setting `SEED_ON_START` (code default off; on in `.env.example`, Compose and `render.yaml`).
+- **2, health check and non-root.** `app/healthcheck.py` (stdlib only, since the slim image has no curl) is the Dockerfile `HEALTHCHECK` (90 s start period); the image creates user `app` (uid 10001), copies the code with `--chown` and runs as it. Compose now makes the frontend wait for the backend's health. Not built here (no Docker daemon): the permissions and start-up of the image itself are unverified until CI builds it.
+- **3, test clock: a deliberate departure from the default asked for.** The hosted UI stays without the panel (`VITE_ENABLE_TEST_CLOCK` off, covered by tests). `ALLOW_TEST_CLOCK` was **not** switched to `false` in `render.yaml`, because the assignment demonstrably asks for a reviewer clock on the live instance: the problem PDF's Time feature, the common PDF section 4 and 8.1 (reviewers use the live app and try edge cases such as 47h59m versus 48h01m) and the submission checklist. It stays `"true"` for the review, with the security implications, three safer alternatives (the fixed-clock tests, a local run, demo data plus `--reset`) and the instruction to turn it off afterwards in README 5a and 10. This is one line to change if the decision is the other way.
+- **4, tests and CI.** New `tests/test_serve.py` (13 tests: seeds an empty database, schema-only with seeding off, repeat starts change nothing, edits and deleted seed rows are not restored, a database with other data is not seeded over, start-up never resets, the manual reset still works, order of `main()`, API not started on failure, retry/give-up behaviour, no connection text in logs), `tests/test_healthcheck.py` (4), `tests/test_deployment_startup_config.py` (19: non-root image, `HEALTHCHECK`, `CMD`, no `--reset` in any deployment path, Render and Compose settings, Vercel rewrite, test clock off, every setting documented in `.env.example`, the CI container job exists) and three seed tests. New CI job `container`: validates Compose, builds both images, starts the backend image against a PostgreSQL service, then checks health, non-root, migration, seeding, and that a restart after a data change neither re-seeds nor resets. Written but not seen running.
+- **Local evidence without Docker.** The real entry point was started on SQLite: migrate, seed, listening, health check exit 0, a member edit, a stop, a second start on the same file (log: "seeding skipped"), counts unchanged and the edit still there.
+- **5, README.** Section 5a now has the start-up behaviour, the steps for Render and Vercel in order (including setting `CORS_ORIGINS` twice), a table of variable names, redeploy, the manual external-URL re-seed command, the test-clock reasoning and the free-tier limits; sections 5, 6, 9, 10 and 11 updated. No live URL is given. Provider facts I could not check are marked as such.
+- **6, checklist** for `SUBMISSION.md`, the coverage summary, the public repository and the tag is in the reply to this prompt.
+- **Results.** Backend: `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 812 passed, coverage 99% overall. Frontend unchanged by this step (176 tests; re-run at the end of the step).
+- **Not verified:** the Docker build, the non-root user and health check inside the image, start-up on PostgreSQL, the Render and Vercel settings, and any GitHub Actions result. Nothing is deployed or committed. **PostgreSQL has not passed anything yet.**
+
+**Outcome:** Used. Reviewed in prompt 19 and committed with M5.
+
+---
+
+## Prompt 19 — Final M5 pre-commit review and commit (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Perform the final M5 pre-commit review, then commit if all local checks pass. Do not start M6 or deploy.
+>
+> 1. Inspect the full diff and verify that all changes belong to M5.
+> 2. Review `backend/app/serve.py`, `backend/app/db_setup.py`, the seed logic, both Dockerfiles, `docker-compose.yml`, `render.yaml`, and `.github/workflows/ci.yml`.
+> 3. Check startup ordering, database retry behavior, migration failure handling, idempotent seeding, non-root permissions, health-check behavior, and graceful failure. Assess the known risk of two instances starting concurrently; do not claim it is solved unless the code actually handles it.
+> 4. Inspect the CI container job carefully. Confirm it builds the actual images, runs the backend image against PostgreSQL, waits for health, verifies seeded data, edits a record, restarts the container against the same database, and verifies the edit survives without reseeding. Check that failures cause the job to fail.
+> 5. Run backend Ruff and format checks, the full backend test suite with coverage, frontend lint/Prettier/type-check/tests/build, and `docker compose config`. Report actual results.
+> 6. Verify `PROMPTS.md`, README startup/deployment instructions, `.env.example` values, and seed behavior. Do not claim Docker or PostgreSQL has passed locally.
+> 7. If no serious issue remains, stage only the intended M5 files and commit with a Conventional Commit subject no longer than 72 characters, for example:
+> `feat(deploy): [M5] add safe startup and PostgreSQL container CI`
+> 8. Verify the commit hash, recent history, and clean working tree.
+>
+> Do not push or deploy. Report any checks that could not run and distinguish local results from CI results.
+
+**What the assistant did:**
+
+- **Scope.** The diff is 11 modified and 5 new files, all belonging to M5: container start-up (`app/serve.py`, `app/db_setup.py`, `app/seed.py`, `app/config.py`), health check (`app/healthcheck.py`), `backend/Dockerfile`, `docker-compose.yml`, `render.yaml`, `.env.example`, the CI workflow, the tests for these, and README and PROMPTS.md. No unrelated edits, secrets or stray files (encoding scan clean).
+- **Review findings (none serious).** Start-up order is correct (wait, migrate, optional seed of an empty database, then serve) and a failure at any step ends the process before the API listens. Retries cover only connection errors (`OperationalError`), 10 tries 3 seconds apart, and log only the error class; a final failure prints a normal traceback to the container's own log, which can include the database host. Seeding skips when any member or item exists. The image runs as uid 10001; the code is owned by that user; `alembic.ini` and the migrations are inside `/app` and the working directory is `/app`, so Alembic finds them. The health check follows `PORT`. Minor, left as they are: while start-up is still running (before uvicorn installs its handlers) the Python process is PID 1 and a stop signal is ignored until Docker's kill timeout; the frontend image runs nginx as its default user (the request was about the backend); `uvicorn` also writes its own access log next to the application's request log.
+- **Two instances starting at once is not handled.** The code takes no lock. Both could run the migration (one would normally fail on an already-created table and exit) and both could see an empty database and each load the sample data. This is now stated plainly in the `serve.py` docstring and README 5a instead of only mentioning the migration; a PostgreSQL advisory lock would close it and was not added because it cannot be tested here. A single free instance, or a deploy that replaces a running instance, does not hit it.
+- **CI container job.** Confirmed by reading: it builds both real images, runs the backend image with `--network host` against a PostgreSQL service, waits (up to 200 s) for Docker's health status and fails if the container stops or never becomes healthy, checks non-root, `/health`, 10 members and 13 items, and the migration and seeding log lines, edits a member, restarts the container on the same database, and checks the totals are unchanged, the edit is present, the seed row is not back and the log says seeding was skipped. Every step uses the runner's default `bash -e`, so a failing `test`, `curl -f` or `grep -q` fails the job. Tightened in this review: after the restart it now waits for Docker's health status **and** a successful `GET /health` (so a stale status cannot let the checks run early), and the log assertions above were added. It does not start the frontend container or the whole Compose stack. **Written but not seen running.**
+- **Checks run locally.** Backend: `ruff check` and `ruff format --check` pass; `pytest` with coverage: 812 passed in the full run (the three start-up test files, 36 tests, were re-run once more after removing an unclosed test connection and also pass), coverage 99% overall (serve.py 93%, db_setup.py 96%, healthcheck.py 87%, rules.py 100%). Frontend: lint, Prettier, `tsc`, 176 tests and the production build pass. `docker compose config --quiet` exits 0 and resolves `SEED_ON_START`, `ALLOW_TEST_CLOCK`, `VITE_ENABLE_TEST_CLOCK` and the two `service_healthy` conditions. The workflow file parses as YAML and its shell steps pass `bash -n`.
+- **Could not run locally:** the Docker image builds, the container (non-root, health check, start-up on PostgreSQL), the CI job, and anything on Render or Vercel. No GitHub Actions result has been seen. **Docker and PostgreSQL have not passed anything locally.**
+- **Commit.** Only the M5 files were staged, with a Conventional Commit subject of 72 characters or fewer. Not pushed, not deployed. The commit's own hash is not recorded here because it cannot be known before the commit exists.
+
+**Outcome:** Used. Committed as the M5 commit.

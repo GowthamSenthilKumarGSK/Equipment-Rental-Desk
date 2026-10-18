@@ -1,6 +1,6 @@
 # Equipment Rental Desk
 
-> **Status: M4 (UI).** The database, business rules, services, the HTTP API (members, items, reservations, check-out, return, payments, statements, overdue list, reviewer test clock) and the React UI over that API (item catalogue and actions, member accounts and payments, overdue dashboard) are implemented and tested. Deployment (M5) does not exist yet. Sections marked _TBD (Mx)_ are filled in as the milestones land. Nothing below claims a feature that is not built yet.
+> **Status: M4 (UI).** The database, business rules, services, the HTTP API (members, items, reservations, check-out, return, payments, statements, overdue list, reviewer test clock) and the React UI over that API (item catalogue and actions, member accounts and payments, overdue dashboard) are implemented and tested. Deployment (M5) is in progress: the container start-up (migrate, seed an empty database, serve), the health check, the non-root image, the Render and Vercel settings and a CI job that runs the real image are written and tested as far as is possible without Docker, but **nothing has been deployed** and no live URL exists. Sections marked _TBD (Mx)_ are filled in as the milestones land. Nothing below claims a feature that is not built yet.
 
 ## 1. Title and one-liner
 
@@ -43,6 +43,8 @@ backend/            FastAPI app, Alembic migrations, tests
   app/clock.py      Injectable clock (system clock, fixed clock for tests and X-Test-Clock)
   app/logging_config.py  JSON logs with a request id
   app/seed.py       Sample data; app/db_setup.py migrates and seeds in one command
+  app/serve.py      Container entry point: wait for the database, migrate, seed an empty one, serve
+  app/healthcheck.py  The container HEALTHCHECK (GET /health)
   alembic/          Database migrations
   tests/            pytest suite (tests/domain = rules, tests/db = schema, migration, seed)
 frontend/           React + TypeScript UI (Vite); contains no business rules
@@ -99,7 +101,7 @@ The 3-active-loan limit, the ₹100 balance limit and the 14-day overdue limit d
 
 **Environment variables**
 
-- Root `.env` (copy from `.env.example`): `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` configure the compose database; `DATABASE_URL` is used when the backend runs on your machine; `CORS_ORIGINS` is a comma-separated list of allowed browser origins; `LOG_LEVEL`; `ALLOW_TEST_CLOCK` (default `true`) lets requests set "now" with the `X-Test-Clock` header (see section 10).
+- Root `.env` (copy from `.env.example`): `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` configure the compose database; `DATABASE_URL` is used when the backend runs on your machine; `CORS_ORIGINS` is a comma-separated list of allowed browser origins; `LOG_LEVEL`; `ALLOW_TEST_CLOCK` (default `true`) lets requests set "now" with the `X-Test-Clock` header (see section 10); `SEED_ON_START` (code default `false`, `true` in `.env.example`, Compose and Render) makes the container start-up load the sample data into an **empty** database after migrating (it never resets anything).
 - The `rental` / `rental` Postgres credentials in `.env.example` and `docker-compose.yml` are **local-development defaults only**. Hosted environments must supply `DATABASE_URL` from the provider's environment configuration; no production credentials are stored in this repo.
 - `frontend/.env` (copy from `frontend/.env.example`), both read by Vite at dev/build time (they are baked into the built files, so changing them needs a rebuild):
   - `VITE_API_URL`: the backend base URL, no trailing slash (default `http://localhost:8000`). Every request goes there; the footer of the UI shows it. The backend's `CORS_ORIGINS` must include the origin the UI is served from (`http://localhost:5173` for `npm run dev`, `http://localhost:8080` for Compose).
@@ -140,13 +142,59 @@ python -m app.db_setup             # alembic upgrade head, then seed if the data
 python -m app.db_setup --reset     # wipe all rows, then seed again (schema is kept)
 ```
 
-`python -m app.db_setup` is safe to run repeatedly: migrations are idempotent and seeding is skipped when members already exist. It reads `DATABASE_URL` (see `.env.example`). To run only the migration: `alembic upgrade head` from `backend/`. Seed data is fictional: invented names, and phone numbers beginning `+91 00000`, which cannot belong to a real person. It deliberately includes an overdue loan, a member blocked for fees, a member at exactly ₹100, a reservation 1 hour from expiry, and a suspended member with history.
+`python -m app.db_setup` is safe to run repeatedly: migrations are idempotent and seeding is skipped when any member or item already exists (so it never adds sample data next to real records). It reads `DATABASE_URL` (see `.env.example`). To run only the migration: `alembic upgrade head` from `backend/`. Seed data is fictional: invented names, and phone numbers beginning `+91 00000`, which cannot belong to a real person. It deliberately includes an overdue loan, a member blocked for fees, a member at exactly ₹100, a reservation 1 hour from expiry, and a suspended member with history.
 
-**One-command compose bring-up:** `docker compose up --build` starts Postgres, the API (<http://localhost:8000>) and the UI (<http://localhost:8080>). _The compose file passes `docker compose config`; the images have not been built or run yet (the Docker daemon was not running during M0)._
+**One-command compose bring-up:** `docker compose up --build` starts Postgres, the API (<http://localhost:8000>) and the UI (<http://localhost:8080>). The API container migrates the database and loads the sample data into the empty database on its own (`SEED_ON_START`), the UI waits for the API's health check, and nothing else is needed. Stop with `docker compose down`; `docker compose down -v` also deletes the database volume, and the next `up` seeds again. _The compose file passes `docker compose config`, and the start-up command was run locally against SQLite (migrate, seed, health check, restart without re-seeding). The images have not been built or run on this machine because the Docker daemon is not available here; CI's `container` job is meant to do that (see "Known limitations")._
 
 ## 5a. Deployment
 
-_TBD (M5)._ Planned: API and Postgres on Render via `render.yaml`; UI on Vercel using `frontend/vercel.json` with `VITE_API_URL` set in the Vercel dashboard; `CORS_ORIGINS` set on Render to the Vercel URL. Manual dashboard steps, redeploy and re-seed instructions will be listed here.
+**Status: prepared, not performed.** Nothing below has been run against Render or Vercel yet, so no live URLs are listed anywhere in this README. The provider settings are taken from the committed files and the providers' usual dashboards; where I could not check a provider's current rule, it says so.
+
+**What the API container does when it starts** (`backend/Dockerfile` runs `python -m app.serve`; `render.yaml` sets no start command, so this is what Render runs):
+
+1. Waits for the database to accept connections (up to 10 tries, 3 seconds apart), because a hosted database can be a little behind the service.
+2. Runs `alembic upgrade head`. This is idempotent and changes no rows.
+3. If `SEED_ON_START=true`, loads the sample data **only if the database has no members and no items**. A database with any data is left exactly as it is, so a restart or redeploy can never overwrite or duplicate anything. `--reset` is never used here: wiping is a separate command a person has to type (below).
+4. Starts `uvicorn` on `$PORT` (Render sets it; 8000 otherwise) in the same process.
+
+If step 1 or 2 fails the process exits with an error and the API never starts, so a bad deploy fails visibly rather than serving 500s. The image runs as an unprivileged user (uid 10001) and has a `HEALTHCHECK` (`python -m app.healthcheck`, a `GET /health` on `$PORT`, 90 seconds of grace for the steps above). **Run one instance only. Two instances starting at the same moment are not handled** (the code takes no lock): both could run the migration at once, where one would normally fail on an already-created table and exit, and both could see an empty database and each load the sample data, leaving it twice. This does not arise on a single free instance, or when a deploy replaces a running instance that finished starting earlier. A PostgreSQL advisory lock around the migrate-and-seed step would close it; that was not added, and could not be tested here.
+
+**Steps, in order** (the chicken-and-egg between the two URLs is why `CORS_ORIGINS` is set twice):
+
+1. **Make the repository reachable.** The assignment requires a public repository; Render and Vercel also need access to it.
+2. **Render → New → Blueprint**, pick the repository and branch `main`. Render reads `render.yaml` and creates the web service `rental-desk-api` (runtime Docker, `./backend/Dockerfile`, context `./backend`, plan `free`, health check path `/health`) and the database `rental-desk-db` (plan `free`). When it asks for `CORS_ORIGINS`, enter `http://localhost:5173` for now.
+3. Copy the API's public URL from the Render dashboard (written `<api-url>` below). Check `<api-url>/health` and `<api-url>/docs`. The first start migrates and seeds; the log shows `Migrations are up to date` then `Seeded sample data`.
+4. **Vercel → Add New → Project**, import the same repository and set **Root Directory** to `frontend` (this is a manual setting; `frontend/vercel.json` then supplies the Vite framework and the rewrite that sends every route to `index.html`). Build command `npm run build` and output directory `dist` are the Vite defaults. Add the environment variable **`VITE_API_URL`** = `<api-url>` (no trailing slash). Leave **`VITE_ENABLE_TEST_CLOCK` unset**: the hosted UI has no test-clock panel. Deploy.
+5. Copy the Vercel production URL (its origin only, for example `https://<project>.vercel.app`). In Render → `rental-desk-api` → Environment, set **`CORS_ORIGINS`** to exactly that origin (scheme and host, no path, no trailing slash; several origins are comma-separated) and save; Render redeploys. Vercel preview deployments have different origins and are refused unless listed.
+6. Open the UI and use it. If the pages show "Can't reach the server", the usual cause is a `CORS_ORIGINS` that does not match exactly (the browser blocks the call and the UI cannot tell that from a network failure) or a wrong `VITE_API_URL`.
+
+| Where | Variable | Value | Set by |
+| --- | --- | --- | --- |
+| Render | `DATABASE_URL` | the database's connection string | automatic (`fromDatabase` in `render.yaml`) |
+| Render | `CORS_ORIGINS` | the exact Vercel origin | **manual** (step 2, then step 5) |
+| Render | `LOG_LEVEL` | `INFO` | `render.yaml` |
+| Render | `SEED_ON_START` | `true` | `render.yaml` |
+| Render | `ALLOW_TEST_CLOCK` | `true` for the review, then `false` | `render.yaml` (see below) |
+| Render | `PORT` | set by Render | do not set |
+| Vercel | `VITE_API_URL` | `<api-url>` | **manual** (step 4) |
+| Vercel | `VITE_ENABLE_TEST_CLOCK` | unset | leave unset |
+
+`VITE_API_URL` and `VITE_ENABLE_TEST_CLOCK` are fixed when the UI is built, so changing either needs a Vercel redeploy.
+
+**Redeploying after a code change.** Push to `main`; Render rebuilds and restarts the API and Vercel rebuilds the UI (both are their usual defaults for a connected repository; check the project settings). On every start the migrations run and seeding is skipped because data exists, so nothing is lost. A new migration is applied automatically at the next start.
+
+**Re-seeding the hosted database (manual and destructive).** This wipes every row and loads the sample data again, relative to the time you run it, which is also how to get the "reservation about to expire" back after it has lapsed. The free Render web service has no shell as far as I know (check the current plan), so run it from your own machine with the database's **external** connection string from the Render dashboard (also check the database's access settings allow your address). Put the string in your shell only; never in a file or in git:
+
+```powershell
+cd backend
+$env:DATABASE_URL = "<external database URL from the Render dashboard>"
+python -m app.db_setup --reset
+Remove-Item Env:DATABASE_URL
+```
+
+**Testing the time rules on the hosted instance.** The assignment's problem statement asks for "a way for a reviewer to set 'today' ... so overdue and expiry logic can be tested without waiting a week", the common instructions have reviewers hit the live API and try the listed edge cases (such as reserving at 47h59m versus 48h01m), and the submission checklist asks for the reviewer clock to be documented. Because of that, `render.yaml` keeps `ALLOW_TEST_CLOCK` at `"true"` for the review; the hosted UI still has no clock control, so a reviewer sends the header with `curl` (section 10). The API has no authentication, so anyone can send the header; the consequences are in section 10. Safer ways to exercise the same rules, in order of preference: (1) the automated tests, which fix the clock and cover each boundary (`pytest`, section 6); (2) a local run or `docker compose up` against your own database, where nothing public is affected; (3) the hosted API only against its demo data, followed by `--reset` above. After the review, set `ALLOW_TEST_CLOCK` to `"false"` in `render.yaml` and redeploy (a value changed only in the dashboard is overwritten when the blueprint is synced).
+
+**Limits of the free tiers** (from the providers' general behaviour, not checked against their current terms): the API sleeps when idle and the first request afterwards is slow; the free Postgres can expire or pause and may be limited to one per account; the start-up retries the database connection for about 30 seconds only.
 
 ## 6. Running tests and coverage
 
@@ -167,21 +215,21 @@ pytest
 
 The schema in tests always comes from the Alembic migration (never `create_all`), and `tests/db/test_migrations.py` fails if the models and the migration drift apart.
 
-**What the backend tests cover (after the M4 review fixes: 773 passed, 0 skipped, 0 expected failures; the counts below are from that run).**
+**What the backend tests cover (after the M5 start-up work: 812 passed, 0 skipped, 0 expected failures; the counts below are from that run).**
 
 | Folder | Tests | What it checks |
 | --- | --- | --- |
 | `tests/domain/` | 225 | The pure rules in `app/domain`: every boundary (47h59m / 48h00m / 48h01m expiry, due date and overdue, late-fee rounding and both caps, IST-midnight cases, ₹100 vs ₹100.01, 14 days vs 14 days + 1 s, 3 vs 4 loans, state-machine tables, payment amounts) and the input guards (naive datetimes, non-integer money). |
 | `tests/services/` | 134 | The use cases against a real database with a fixed clock (`FixedClock`): reserve, check out, return, cancel, maintenance, payments, suspension, read-time status, expiry on write, rollback when a step fails, 6 concurrency tests that fire several requests from separate threads at the same moment, and 2 deterministic replays of a request that waits for a lock while another commits (`test_stale_state_races.py`). |
 | `tests/api/` | 341 | The real FastAPI app and database through HTTP (`TestClient`): CRUD and its validation, the rental flows and every refusal (blocked members, loan limit, expired reservations, double check-out and return), payments and statements, the overdue list, the test clock (including out-of-range values and the switch that turns it off), refusal of NUL characters, the error shape and mapping, request ids, and what is and is not logged, including that server logs of unexpected and database errors carry no exception messages or personal data. |
-| `tests/db/` | 54 | Schema constraints and foreign keys, the migration (it matches the models and reverses), the seed data (including that its fees match the fee rule) and the `db_setup` command. |
-| `tests/` | 19 | Clock, config, `/health`, and the deployment files: that `ALLOW_TEST_CLOCK` is passed through by `docker-compose.yml` and set in `render.yaml`. |
+| `tests/db/` | 57 | Schema constraints and foreign keys, the migration (it matches the models and reverses), the seed data (including that its fees match the fee rule, and that a database holding any member or item is never seeded over) and the `db_setup` command. |
+| `tests/` | 55 | Clock, config, `/health`, and the deployment: start-up (`app.serve`) migrates, seeds only an empty database, is safe to repeat, never overwrites edits and never resets; it waits for a late database, logs no connection text, and does not start the API if preparing fails; the health check command; and the committed files (non-root image, `HEALTHCHECK`, `CMD`, `render.yaml`, Compose, Vercel, `.env.example`, no `--reset` anywhere, `ALLOW_TEST_CLOCK` passed through, the CI container job). |
 
 **How strong are they?** After writing them I broke the code on purpose in 17 ways (for example `>=` instead of `>` at each boundary, rounding down instead of up, dropping a fee cap, skipping the member checks, skipping the expiry sweep, removing the SQLite exclusive transaction) and confirmed each change makes at least one test fail. One caveat: removing the PostgreSQL member lock from `record_payment` was only caught by an unrelated not-found test, because SQLite's exclusive transactions already serialise payments. So the PostgreSQL-specific lock is not proven by any test that has actually run. I repeated the exercise for the API layer with 16 breakages (ignoring the test-clock header, accepting a clock without an offset, wrong status codes, accepting float money or unknown fields, `<=` instead of `<` on the overdue list, ignoring the status filter, treating `%` as a wildcard, dropping the request id, echoing submitted values in validation errors, leaking exception text, logging the query string, ignoring lapsed reservations in the statement, using the UTC date for the join date, deleting members with history); every one was caught. After the review fixes (test-clock range, NUL input, `ALLOW_TEST_CLOCK` pass-through) I used 11 more: removing the range check, widening either bound, converting to UTC before checking the range (the original overflow), allowing NUL in each kind of text, and dropping the setting from the Compose file or the Render blueprint; every one was caught. For the error-log redaction I used 8 more (logging the traceback again in either place, adding the exception message, the driver's message, or the SQL and parameters to the log fields, dropping the location, the SQLSTATE, or the whole database log fields); every one was caught.
 
 The two race replays fail on the code as it was before the fix (a `ValueError`, and a database CHECK-constraint error in the sweep case) and pass after it.
 
-**Coverage after the M4 review fixes** (SQLite run, `pytest`; M4 added `allowed_item_actions`, `has_reached_loan_limit` and the API fields they feed, all fully covered): overall **99%** (branch coverage on). Business-rule layer: `app/domain` **100%** (`rules.py` 100%, line and branch); `app/services` **98%**; `app/repositories` **100%**. API layer: `app/api` **100%**, `app/schemas` **100%**. Not covered: the `ConflictError` raised when a reservation changes between the unlocked read and the lock in `check_out` (a race that cannot be forced reliably); the re-raise of an unrelated `IntegrityError` in `reserve_item`; two defensive branches in the expiry sweep (`support.py` lines 93 and 95→98); reinstating a suspended member who has no open suspension row; `session_scope`'s rollback branch. The committed coverage summary will be added at M6.
+**Coverage after the M5 start-up work** (SQLite run, `pytest`; the rules and API layers are unchanged and still fully covered. The new start-up modules are `serve.py` 93%, `db_setup.py` 96% and `healthcheck.py` 87%: what is not covered is the `if __name__ == "__main__"` line of each, i.e. the entry points themselves, which were exercised by hand, not by a test): overall **99%** (branch coverage on). Business-rule layer: `app/domain` **100%** (`rules.py` 100%, line and branch); `app/services` **98%**; `app/repositories` **100%**. API layer: `app/api` **100%**, `app/schemas` **100%**. Not covered: the `ConflictError` raised when a reservation changes between the unlocked read and the lock in `check_out` (a race that cannot be forced reliably); the re-raise of an unrelated `IntegrityError` in `reserve_item`; two defensive branches in the expiry sweep (`support.py` lines 93 and 95→98); reinstating a suspended member who has no open suspension row; `session_scope`'s rollback branch. The committed coverage summary will be added at M6.
 
 **Frontend tests (after the M4 review fixes: 176 passed in 11 files, `npm test`).** They use Vitest with React Testing Library on jsdom. The only added dependencies are `vitest`, `jsdom` and `@testing-library/*` (dev) and `react-router-dom` (runtime); there is no data-fetching, form or UI library and no mock-server package. A test renders the real app at a URL and replaces `fetch` with a small router keyed by `"METHOD /path"` (`src/test/helpers.tsx`); a request the test did not expect fails the test, so the UI cannot silently call something else. The stubs return the API's real response and error shapes, so these tests prove how the UI reacts to the API's contract, not that the backend agrees. That was checked separately by hand against a running, seeded backend (see PROMPTS.md).
 
@@ -348,7 +396,7 @@ Clients never see a traceback, SQL or a database error: unexpected failures and 
 
 **Not logged:** request or response bodies, query strings, names, phone numbers, notes, exception messages for unexpected and database errors, SQL statements and parameters. Tests assert this (`tests/api/test_errors_and_logging_api.py`, `tests/api/test_error_log_redaction_api.py`).
 
-**Where to see the logs.** Locally, in the terminal running `uvicorn`. On the hosted instance: the Render dashboard log stream for the API service _(TBD, M5)_.
+**Where to see the logs.** Locally, in the terminal running `uvicorn`. On the hosted instance: the Render dashboard, service `rental-desk-api`, Logs tab (not yet deployed, so not yet seen).
 
 ## 10. Reviewer aids
 
@@ -373,13 +421,13 @@ curl.exe -s -X POST http://localhost:8000/items/$saw/check-out -H "X-Test-Clock:
 ```
 
 - Accepted: an ISO-8601 timestamp with a UTC offset that stands for an instant from `2000-01-01T00:00:00Z` to `2200-01-01T00:00:00Z` inclusive, for example `2026-10-20T10:00:00+05:30`, `2026-10-20T04:30:00Z` or `2026-10-20T04:30:00+00:00`. Refused with 400 `invalid_test_clock`: no offset, a date alone, a Unix timestamp, anything that is not ISO-8601, or an instant outside that range (`9999-12-31T23:59:59Z`, `0001-01-01T00:00:00+05:30`, `1999-12-31T23:59:59Z`). The range is checked on the instant itself, before any conversion, and nothing is written for a refused request.
-- Set `ALLOW_TEST_CLOCK=false` to refuse the header (400 `test_clock_disabled`, for every value). It is on by default so reviewers can use it on the hosted instance. It reaches the API in each setup: a local `uvicorn` reads it from the root `.env`; Docker Compose passes it through from `.env` (`docker-compose.yml`, default `true`); the Render blueprint sets it explicitly to `"true"` (`render.yaml`), so to turn it off there, change that value and redeploy (a value edited only in the dashboard is overwritten the next time the blueprint is synced). Tests read these files to make sure the setting cannot silently stop being passed through.
+- Set `ALLOW_TEST_CLOCK=false` to refuse the header (400 `test_clock_disabled`, for every value). It is on by default so reviewers can use it on the hosted instance, which the assignment asks for (section 5a, "Testing the time rules on the hosted instance", gives the reasoning and the safer alternatives). It reaches the API in each setup: a local `uvicorn` reads it from the root `.env`; Docker Compose passes it through from `.env` (`docker-compose.yml`, default `true`); the Render blueprint sets it explicitly to `"true"` (`render.yaml`), so to turn it off there, change that value and redeploy (a value edited only in the dashboard is overwritten the next time the blueprint is synced). Tests read these files to make sure the setting cannot silently stop being passed through.
 - **Security implications.** The API has no authentication, so the header is open to anyone who can reach it. It bypasses no rule: every rule is judged at the pretend time. What it does allow: expiring other members' reservations early (a write at a later pretend time saves the expiry), charging or avoiding a late fee by returning at a chosen time, and leaving rows with future timestamps that real-time requests then have to live with (a reservation dated 2199 stays reserved for real-time callers and cannot be cancelled until a request sends a clock at or after that time). The accepted range only stops values that would break the application; it is not an access control. On a public deployment, use the header during the review and then turn it off.
 - **In the UI.** Not available by default. A normal build has no clock control, never sends the header, and ignores any value left in the browser's storage. Build with `VITE_ENABLE_TEST_CLOCK=true` (section 5) to get a collapsed "Reviewer test clock (testing only)" panel in the page footer where you enter a date and time in IST. While a time is set, a banner on every page says "Test clock is on" with that time, every API request carries `X-Test-Clock`, and "Go back to real time" removes it. The setting lives in `sessionStorage`, so it ends with the browser tab. The UI only forwards the time; the API still validates it (range, offset, `ALLOW_TEST_CLOCK`) and a refusal is shown like any other error. The same warnings as above apply: writes made under a pretend time keep it. Do not publish a build with the flag on without also turning off `ALLOW_TEST_CLOCK` after the review.
 - Things worth trying: reserve at T and check out at T+47h59m (ok) and T+48h00m (409 `reservation_expired`); check out at T and return at T+7d (no fee) and T+7d+1s (₹10); `GET /loans/overdue` and `GET /items?status=overdue` at T+7d and T+7d+1s; a member with a balance of exactly ₹100 (can borrow) and ₹100.01 (blocked).
 - Anything written under a pretend time (a reservation, a payment) keeps that time. Re-seed afterwards (below).
 
-**Re-seed.** `python -m app.db_setup --reset` from `backend/` wipes all rows and loads the sample data again (see section 5). The seed includes a member blocked for fees (Kavita Iyer, ₹120), one at exactly ₹100 (Imran Sheikh), one blocked for a 16-day-overdue loan (Meera Kulkarni), one at the 3-loan limit (Priya Nair), a suspended member with history (Dinesh Patel), and a reservation made 47 hours before the seed time. Ids depend on the database, so look them up by name: `GET /members?q=Kavita`, `GET /items?q=Tiller` (the samples below do this).
+**Re-seed.** `python -m app.db_setup --reset` from `backend/` wipes all rows and loads the sample data again (see section 5; for the hosted database see section 5a). Starting the API never does this: `python -m app.serve` only seeds an empty database. The seed includes a member blocked for fees (Kavita Iyer, ₹120), one at exactly ₹100 (Imran Sheikh), one blocked for a 16-day-overdue loan (Meera Kulkarni), one at the 3-loan limit (Priya Nair), a suspended member with history (Dinesh Patel), and a reservation made 47 hours before the seed time. Ids depend on the database, so look them up by name: `GET /members?q=Kavita`, `GET /items?q=Tiller` (the samples below do this).
 
 **Sample requests.**
 
@@ -412,8 +460,8 @@ Hosted instance: _TBD (M5)_. The same requests work against the live API base UR
 - Server logs of unexpected errors deliberately omit the exception message, so a failure that cannot be understood from its class, location and constraint has to be reproduced locally (section 9).
 - On SQLite every transaction is exclusive, so concurrent requests queue behind each other. That is correct but slow under load, and it means SQLite cannot demonstrate the row-lock design.
 - A lapsed reservation stays a `reserved` row (and its item `reserved`) until the next write on that item or a call to `expire_stale_reservations()`. Anything that lists items or loans must use the effective status, not the raw column.
-- Docker images and the compose stack have not been built or run.
-- `render.yaml` and `frontend/vercel.json` have not been used against the real providers. Render's free Postgres tier has limits (it may expire or pause); check the current terms before relying on it.
+- Docker images and the compose stack have not been built or run **on this machine** (no Docker daemon). `.github/workflows/ci.yml` has a `container` job that validates the Compose file, builds both images, starts the backend image against a PostgreSQL service and checks migration, seeding, non-root, health and a restart that neither re-seeds nor resets. That job is written but **I have not seen it run**: the repository is private, so its Actions results were not visible to me. Until a run is seen, treat the image, the health check and the start-up on PostgreSQL as unverified.
+- Nothing has been deployed. `render.yaml` and `frontend/vercel.json` have not been used against the real providers, and the manual steps in section 5a are unperformed. Render's free Postgres tier has limits (it may expire or pause); check the current terms before relying on it.
 
 ## 12. AI and third-party use
 
