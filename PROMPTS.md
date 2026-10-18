@@ -27,8 +27,23 @@ Rules for this file:
 | 15  | 2026-10-17 | M4        | Claude Code (Sonnet 5.5)  | Used: read-only review of M4; 3 confirmed bugs, 1 test that did not test what it said, several smaller risks reported; fixed in prompt 16 |
 | 16  | 2026-10-17 | M4        | Claude Code (Sonnet 5.5)  | Used: review findings fixed (see below); suites passed on SQLite only; M4 committed afterwards (9d4930e) |
 | 17  | 2026-10-18 | M5        | Claude Code (Sonnet 5.5)  | Used: read-only audit; found nothing migrated or seeded at deploy, no SUBMISSION.md/coverage.txt/tag, repo apparently private, no CI result visible |
-| 18  | 2026-10-18 | M5        | Claude Code (Sonnet 5.5)  | Used: start-up, health check, non-root image, CI container job, tests and README deployment section written; tested on SQLite and without Docker; reviewed in prompt 19 and committed as the M5 commit |
-| 19  | 2026-10-18 | M5        | Claude Code (Sonnet 5.5)  | Used: pre-commit review of M5 (no serious issue; CI job and two-instance wording tightened); local checks passed; committed as the M5 commit, not pushed |
+| 18  | 2026-10-18 | M5        | Claude Code (Sonnet 5.5)  | Used: start-up, health check, non-root image, CI container job, tests and README deployment section written; tested on SQLite and without Docker; reviewed in prompt 19 and committed as the M5 commit (final pushed hash `182232b`, see prompt 24) |
+| 19  | 2026-10-18 | M5        | Claude Code (Sonnet 5.5)  | Used: pre-commit review of M5 (no serious issue; CI job and two-instance wording tightened); local checks passed; committed as `d4c2325`, then amended twice by the owner (`73d7f2d`, `182232b`) and pushed as `182232b` |
+| 20  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: read-only pre-deployment audit; Render and Vercel checklists, CORS and clock-config review; found a damaged commit message (`73d7f2d`) and a stray file; the owner then replaced the message (`182232b`) and removed the file |
+| 21  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: read-only post-deployment audit with live read-only checks of the Render API and Vercel UI; listed missing `SUBMISSION.md`, `coverage.txt`, README URLs and stale text |
+| 22  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: full backend run (812 passed), `backend/coverage.txt` generated from it, README section 6 coverage updated; uncommitted |
+| 23  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: README updated with live URLs, deployed status, hosted read-only samples and honest limitations; heading 12 renamed to "usage"; uncommitted |
+| 24  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: this log updated (prompts 20-24, outdated M5 statuses corrected); CI result recorded as unverified at the time (verified later, see the dated notes in the entry); uncommitted |
+| 25  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: `SUBMISSION.md` created (sections A-G, 7 milestone rows with M6 placeholders, 11 rubric rows); only file edited; length trimmed in rounds and tightened in prompt 26 |
+| 26  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: owner comment removed, `SUBMISSION.md` trimmed and checked against the repository (one lock-order claim and one deployment claim corrected); 1.83 pages at 10.5 pt, 2.01 at 11 pt |
+| 27  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: read-only CI/repository audit; repository private (strong evidence), CI for `182232b` unverified, local state and tag reported |
+| 28  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: read-only verification after the repository was made public; run 39142792206 passed backend, frontend and container on `182232b` (step results; logs need a login) |
+| 29  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: `SUBMISSION.md` updated to record the public repository and the passing run; local SQLite results kept labelled; PostgreSQL row locking still not claimed proven; scores unchanged |
+| 30  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: read-only review of the four pending files; `coverage.txt` verified against the 812-test run; found stale README CI statements, missing log entries, an understated AI disclosure |
+| 31  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: `README.md` corrected for the passing CI run and section 12 rewritten to disclose broad Claude Code assistance; lock-correctness caveat kept; uncommitted |
+| 32  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: this log extended with entries 25-32 and dated notes on prompt 24; uncommitted |
+| 33  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: final read-only consistency audit of the four files; figures, hashes, CI claims and structure consistent; found an inaccurate Git-history claim in the AI disclosure and an unlogged prompt |
+| 34  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Pending review: AI-disclosure history corrected in `README.md` and prompt 31; entries 33 and 34 added; uncommitted |
 
 ---
 
@@ -660,7 +675,7 @@ Business-rule delegation, status codes and error mapping for the tested inputs, 
 - **Results.** Backend: `ruff check` and `ruff format --check` pass; `pytest` exits 0 with 812 passed, coverage 99% overall. Frontend unchanged by this step (176 tests; re-run at the end of the step).
 - **Not verified:** the Docker build, the non-root user and health check inside the image, start-up on PostgreSQL, the Render and Vercel settings, and any GitHub Actions result. Nothing is deployed or committed. **PostgreSQL has not passed anything yet.**
 
-**Outcome:** Used. Reviewed in prompt 19 and committed with M5.
+**Outcome:** Used. Reviewed in prompt 19 and committed with M5. Update (prompt 24): the M5 work was later pushed as `182232b` and is what is running on Render and Vercel (prompt 21); the Docker, PostgreSQL and CI items listed above as not verified are still not verified by a recorded result.
 
 ---
 
@@ -690,6 +705,456 @@ Business-rule delegation, status codes and error mapping for the tested inputs, 
 - **CI container job.** Confirmed by reading: it builds both real images, runs the backend image with `--network host` against a PostgreSQL service, waits (up to 200 s) for Docker's health status and fails if the container stops or never becomes healthy, checks non-root, `/health`, 10 members and 13 items, and the migration and seeding log lines, edits a member, restarts the container on the same database, and checks the totals are unchanged, the edit is present, the seed row is not back and the log says seeding was skipped. Every step uses the runner's default `bash -e`, so a failing `test`, `curl -f` or `grep -q` fails the job. Tightened in this review: after the restart it now waits for Docker's health status **and** a successful `GET /health` (so a stale status cannot let the checks run early), and the log assertions above were added. It does not start the frontend container or the whole Compose stack. **Written but not seen running.**
 - **Checks run locally.** Backend: `ruff check` and `ruff format --check` pass; `pytest` with coverage: 812 passed in the full run (the three start-up test files, 36 tests, were re-run once more after removing an unclosed test connection and also pass), coverage 99% overall (serve.py 93%, db_setup.py 96%, healthcheck.py 87%, rules.py 100%). Frontend: lint, Prettier, `tsc`, 176 tests and the production build pass. `docker compose config --quiet` exits 0 and resolves `SEED_ON_START`, `ALLOW_TEST_CLOCK`, `VITE_ENABLE_TEST_CLOCK` and the two `service_healthy` conditions. The workflow file parses as YAML and its shell steps pass `bash -n`.
 - **Could not run locally:** the Docker image builds, the container (non-root, health check, start-up on PostgreSQL), the CI job, and anything on Render or Vercel. No GitHub Actions result has been seen. **Docker and PostgreSQL have not passed anything locally.**
-- **Commit.** Only the M5 files were staged, with a Conventional Commit subject of 72 characters or fewer. Not pushed, not deployed. The commit's own hash is not recorded here because it cannot be known before the commit exists.
+- **Commit.** Only the M5 files were staged, with a Conventional Commit subject of 72 characters or fewer. Not pushed, not deployed. The commit's own hash is not recorded here because it cannot be known before the commit exists. *Update (prompt 24), what happened afterwards:* the commit was created in this prompt as `d4c2325`. The owner then amended it twice by hand, to `73d7f2d` and then to `182232b` (the reflog shows both as `commit (amend)`; all three have the same tree), and pushed it: `origin/main` was `182232b` when checked with `git ls-remote`. The final subject is `[M5] add safe startup and PostgreSQL container CI`: it starts with an invisible byte-order mark and no longer has the `feat(deploy):` type the subject had here, and its message has no co-author trailer. These amends were the owner's own Git operations, not assistant actions.
 
-**Outcome:** Used. Committed as the M5 commit.
+**Outcome:** Used. Committed as `d4c2325`; amended twice by the owner and pushed as `182232b` (see the update above). The app was deployed afterwards (prompt 21).
+
+---
+
+## Prompt 20 — M6 pre-deployment audit and manual checklists (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> We are starting M6: deployment and final submission for the Equipment Rental Desk assignment.
+> Current latest commit: `73d7f2d`. M0–M5 are implemented. Do not rewrite existing functionality or add new features.
+> Tasks:
+>
+> 1. Inspect `render.yaml`, `docker-compose.yml`, both Dockerfiles, `backend/app/config.py`, `backend/app/serve.py`, `.env.example`, `frontend/vercel.json` (if present), frontend API configuration, README.md, PROMPTS.md, and the CI workflow.
+> 2. Produce an exact Render deployment checklist: service type, repository root/Dockerfile path, PostgreSQL requirements, every required environment variable and its correct value/source, health-check path, and startup/migration/seed behavior.
+> 3. Produce an exact Vercel checklist: frontend root directory, build command, output directory, required `VITE_*` variables, and SPA routing configuration.
+> 4. Verify that the frontend can use the deployed backend URL and that backend CORS can allow the final Vercel origin without allowing arbitrary origins.
+> 5. Check that production configuration does not accidentally use SQLite, expose secrets, or enable the frontend reviewer-clock panel. Preserve the assignment's intended API reviewer clock configuration and document its risk.
+> 6. Identify any deployment blockers and missing submission artifacts, including `SUBMISSION.md`, committed coverage evidence, live URLs, PROMPTS.md status, and the final Git tag.
+> 7. Give me the exact dashboard steps and commands to perform manually. Do not deploy, change cloud settings, create secrets, modify files, commit, push, or tag anything yet.
+>
+> Keep the report concise and base it on the actual repository files. Clearly distinguish verified facts from assumptions. Do not claim CI, Docker, PostgreSQL, or live deployment passed unless actual evidence exists.
+
+**What the assistant did:** read-only; no file was changed, and nothing was deployed, committed or pushed.
+
+- **Git at that moment.** HEAD was `73d7f2d`, equal to `origin/main`, with no tags. It was an amended copy of the M5 commit `d4c2325` (the reflog shows `commit (amend)`) with the same tree. Its stored message was damaged: a trailer had been pasted into the middle of a body line and some words were lost. An untracked file named `h --force-with-lease origin main`, holding a copy of that message, sat in the repository root (left by a mistyped command). Both were reported and not touched. The owner later replaced them (prompt 21).
+- **Checklists.** From the committed files (`render.yaml`, both Dockerfiles, `docker-compose.yml`, `backend/app/config.py`, `serve.py`, `.env.example`, `frontend/vercel.json`, the frontend config, the CI workflow) it produced the Render checklist (service type, Dockerfile path and context, database, variable names and sources, health path, start-up/migrate/seed behaviour) and the Vercel checklist (root directory, build command, output directory, `VITE_*` variables, SPA rewrite), including why `CORS_ORIGINS` is set twice. Dashboard labels and provider rules were marked as assumptions.
+- **Verified in the code, not on a live system.** `CORS_ORIGINS` becomes an exact list of origins (no wildcard, no regular expression); the UI builds every request URL from `VITE_API_URL`; nothing in the deployment path uses SQLite; `render.yaml` holds no credentials; the frontend clock panel appears only when the UI is built with `VITE_ENABLE_TEST_CLOCK=true`; `ALLOW_TEST_CLOCK` is `"true"` in `render.yaml`, as the assignment's reviewer clock requires, with the risk documented in the README.
+- **Missing at that point:** `SUBMISSION.md`, `coverage.txt`, live URLs in the README, the `v1.0` tag. The repository was not public (unauthenticated GitHub requests returned 404) and no GitHub Actions result was visible.
+
+**Outcome:** Used. The owner replaced the damaged message by amending again (`182232b`) and removed the stray file; both were confirmed in prompt 21, which also found that the new subject starts with an invisible byte-order mark and has no Conventional Commit type.
+
+---
+
+## Prompt 21 — M6 post-deployment audit and live read-only checks (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> We have deployed the Equipment Rental Desk successfully. The Render API is live, the Vercel frontend loads items, and Members and Overdue also work.
+> Continue M6, but do not run any Git commit, amend, push, tag, or other Git history-changing command. I will do all Git operations manually. Do not add Claude co-author trailers.
+> First inspect the current repository, README.md, PROMPTS.md, .gitignore, tests, and coverage configuration. Check the actual current Git status and deployment URLs. Do not assume anything is missing without checking.
+> Then report:
+>
+> 1. Whether SUBMISSION.md exists and whether it follows the assignment's required A–G structure and two-page limit.
+> 2. Whether coverage.txt exists and how to generate it reproducibly from the backend tests.
+> 3. Whether README.md contains the actual live frontend URL `https://equipment-rental-desk.vercel.app` and backend URL `https://rental-desk-api.onrender.com`, and all 12 required headings in the correct order.
+> 4. Whether PROMPTS.md accurately records the M5/M6 work and outcomes.
+> 5. Whether the repository visibility, CI status, deployment status, and final `v1.0` tag still need attention. Distinguish verified facts from things you cannot inspect.
+>
+> Do not change files yet. Give me a concise audit and the proposed next steps.
+
+**What the assistant did:** read-only; no file was changed and no Git command that changes anything was run.
+
+- **Git.** HEAD `182232b`, equal to `origin/main` (checked with `git ls-remote`), clean working tree, no tags. The reflog showed the M5 commit as `d4c2325` (commit), `73d7f2d` (amend), `182232b` (amend): amended twice, with the same tree each time. The subject begins with an invisible byte-order mark and has no Conventional Commit type; the message has no co-author trailer. The stray file from prompt 20 was gone.
+- **Artifacts.** `SUBMISSION.md` did not exist and `backend/coverage.txt` did not exist (`.gitignore` already allowed it). The README had neither live URL, still said "Status: M4", "TBD (M5)" and "nothing has been deployed", and its heading 12 read "…use". The assignment wording for heading 12 was taken from the assignment text extracted earlier in the session, because the PDFs are not in the repository. PROMPTS.md stopped at prompt 19 and still said "not pushed". An old `.coverage` file from a subset run reported 22%, which showed that `coverage report` must follow a full run.
+- **Live checks, read-only (`GET`, `OPTIONS`; nothing was written to the hosted database).** `https://rental-desk-api.onrender.com/health` answered `{"status":"ok"}`; `/items` had a total of 13 with `allowed_actions`; `/loans/overdue` had a total of 3; `/docs` answered 200. `https://equipment-rental-desk.vercel.app/items` loaded 12 of 13 items in a browser, its footer showed the API URL, and it had no clock panel or banner; `/items/1` and `/members` answered 200 (the SPA rewrite). A CORS preflight from the Vercel origin got that origin echoed back; a preflight from another origin got none. The API accepted `X-Test-Clock` on a `GET` (200) and refused an out-of-range value (400). The Members and Overdue pages were reported working by the owner and were not re-checked.
+- **Could not be inspected:** the repository was still private to unauthenticated requests (404); GitHub Actions results; Render's dashboard, logs and database engine.
+
+**Outcome:** Used. It led to prompts 22 to 24.
+
+---
+
+## Prompt 22 — M6 full coverage run and coverage.txt (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Continue M6 for Equipment Rental Desk. Do not run any Git commands that change history or the remote: no commit, amend, push, force-push, tag, or reset. I will do those manually.
+>
+> 1. Run the full backend pytest suite with coverage from `backend/`, not a subset. Use the project's `.venv`.
+> 2. Only if the full suite succeeds, generate `backend/coverage.txt` from that same run. Include the overall coverage report and a separate report for `app/domain/*,app/services/*`.
+> 3. Report actual test counts, overall coverage, and the domain/services coverage from the generated file. Do not invent expected numbers.
+> 4. Update README.md with the actual coverage results, but don't rewrite unrelated sections yet.
+> 5. Inspect the resulting diff. Do not change application logic or tests unless the full test run exposes a real failure; report failures before making fixes.
+> 6. Do not edit PROMPTS.md or SUBMISSION.md yet. Do not run Git commands that change anything.
+>
+> Report the commands run and exact outcomes.
+
+**What the assistant did:**
+
+- **Commands.** From `backend/`: removed the old `.coverage`, then ran `.venv\Scripts\python.exe -m pytest -p no:cacheprovider` (the whole suite, SQLite). **Exit code 0; 812 passed, 1 warning (the known Starlette `httpx` deprecation), in 81.13 s.** Then `python -m coverage report -m` and `python -m coverage report -m --include="app/domain/*,app/services/*"`, both read from that same run's `.coverage`, written to `backend/coverage.txt` (73 lines, ASCII, with a 4-line header giving the command and the test result; line endings were normalised to LF, content unchanged).
+- **Results, as printed in `coverage.txt`.** Overall 99% (1553 statements, 10 missed, 214 branches, 11 partial). Business-rules layer (`app/domain` + `app/services`) 99% (585, 3, 108, 5). Read from the same data for each layer: `app/domain` 100% (169, 0, 38, 0), `app/services` 98% (416, 3, 70, 5), repositories, `api` and `schemas` 100%, `models` 98%.
+- **README.** Only the coverage paragraph of section 6 was replaced: a table with these numbers, the link to `coverage.txt`, the SQLite/PostgreSQL caveat, the uncovered lines (each checked against the source) and the regeneration commands. No test failed, so no application code or test was changed.
+- **State after the step:** `README.md` modified and `backend/coverage.txt` new, both uncommitted; PROMPTS.md and SUBMISSION.md untouched.
+
+**Outcome:** Used.
+
+---
+
+## Prompt 23 — README live-deployment update (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Continue M6 for Equipment Rental Desk. I will perform every Git operation manually. Do not run git commit, amend, push, force-push, tag, reset, or any other history-changing Git command.
+> Edit only README.md in this step. Inspect the existing content first and preserve all 12 required assignment headings, their order, and the existing useful documentation. Keep the extra deployment subsection 5a where it belongs.
+> Make these changes:
+>
+> 1. Replace the M4/not-deployed status banner with an accurate M6 status: the frontend is live on Vercel at https://equipment-rental-desk.vercel.app and the backend is live on Render at https://rental-desk-api.onrender.com.
+> 2. Replace every stale “TBD (M5)”, “not deployed”, “not yet deployed”, or equivalent statement that is contradicted by the live deployment. Do not claim every edge case has been tested.
+> 3. In section 5a, document both live URLs, the Render health endpoint https://rental-desk-api.onrender.com/health, the successful frontend-to-backend connection, and the free-instance cold-start delay. Keep the warning that ALLOW_TEST_CLOCK is enabled for evaluation and should be disabled afterwards.
+> 4. In section 9, remove stale claims that the app is not deployed. Describe only functionality that exists.
+> 5. In section 10, replace the hosted-instance placeholder with the real URLs and useful read-only sample requests. Do not include destructive commands as routine smoke tests.
+> 6. In section 11, replace the “nothing deployed/manual steps unperformed” statement with the verified deployment status. Clearly label anything not yet verified, especially PostgreSQL CI if its result is unknown.
+> 7. Make heading 12 match the assignment's wording “AI and third-party usage” if that is the exact required heading; compare with the existing assignment instructions available in the repository before changing it.
+> 8. Preserve the coverage table, actual 812-test result, coverage.txt link, and SQLite/PostgreSQL caveat already added to section 6. Do not invent new metrics.
+> 9. Check all 12 required headings and their order against the assignment instructions, and report any discrepancy rather than guessing.
+>
+> Do not edit PROMPTS.md or SUBMISSION.md yet. Do not change application code, dependencies, configuration, or tests. After editing, inspect the full README diff and report exactly which stale statements were removed and which deployment facts remain unverified.
+
+**What the assistant did:** edited only `README.md`.
+
+- **Replaced as stale:** the "Status: M4 … nothing has been deployed and no live URL exists" banner; "TBD (M5)" in section 2; "Hosting (planned)" in the tech-stack table; "Status: prepared, not performed … no live URLs" in section 5a; "(not yet deployed, so not yet seen)" in section 9; "Hosted instance: TBD (M5)" in section 10; and in section 11 "After M4 there is no deployment", "Nothing has run on a real PostgreSQL server", the "not run on this machine / job unseen" bullet and "Nothing has been deployed … manual steps unperformed". The "UI exercised only locally" bullet was corrected to say what was and was not checked on the hosted version.
+- **Added:** both live URLs and the health and docs links (banner, sections 2 and 5a, the variable table); the checks made from outside on 18 October 2026; the cold-start note; the warning that `ALLOW_TEST_CLOCK=true` is on for the evaluation and should be disabled afterwards; hosted read-only sample requests (and a note that the local `POST` examples write data); a "Deployment status" bullet in section 11. Statements about Render's build and dashboard were worded as "configured to" because the assistant cannot see them.
+- **Heading 12** was changed from "AI and third-party use" to "AI and third-party usage". All 13 headings (1 to 12 plus 5a) now match the assignment's list and order. The wording is read from the extracted assignment text, where the table cell wraps, so the last word is inferred from that layout.
+- **Preserved:** the coverage table, the 812-test result, the link to `coverage.txt` and the SQLite/PostgreSQL caveat. A search for "TBD", "not deployed", "planned" and similar found nothing left. This step replaced 20 lines with 64.
+- **Still unverified, as stated in the README:** GitHub Actions results (the PostgreSQL test run and the `container` job); repository visibility; the Members and Overdue pages (reported working, not re-checked); Render's build log, settings and logs; the database engine and its expiry; whether every edge case works on the hosted version.
+
+**Outcome:** Used. Uncommitted.
+
+---
+
+## Prompt 24 — Update PROMPTS.md for M6 (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Continue M6 for Equipment Rental Desk. Do not run any Git commands that change history or the remote: no commit, amend, push, force-push, tag, reset, or checkout that discards changes. I will do all Git operations manually.
+> Edit only PROMPTS.md.
+>
+> 1. Read the existing file and preserve its format and earlier entries.
+> 2. Add accurate entries for the M6 coverage run, README deployment cleanup, and live deployment verification. Use the actual prompts and outcomes available in the conversation/repository. If the exact original prompt text is unavailable, summarize it honestly instead of fabricating a verbatim prompt.
+> 3. Correct M5 status statements that are now outdated, including “not pushed” or “hash unknown”, using the verified pushed commit hash `182232b` and the successful Render/Vercel deployment.
+> 4. Record that the M5 CI workflow is visible as green in the user's screenshot only if that screenshot actually corresponds to commit `182232b`; otherwise mark the relevant PostgreSQL and container checks unverified.
+> 5. Preserve the fact that the commit message was amended more than once, but do not add Claude co-author trailers or suggest Claude made the manual commits.
+> 6. Record the current M6 state: README changed, `backend/coverage.txt` generated from 812 passing tests, `SUBMISSION.md` not yet created, and M6 changes not committed.
+> 7. Inspect the diff and report any remaining stale or unsupported statements.
+>
+> Do not edit README.md, coverage.txt, SUBMISSION.md, application code, tests, or configuration.
+
+**What the assistant did:** edited only `PROMPTS.md`; earlier entries were kept and the outdated statements were corrected by adding dated updates instead of rewriting them.
+
+- **New entries.** Prompts 20 to 23 (the M6 audits, including the live deployment verification, the full coverage run, and the README clean-up), each with its verbatim prompt, taken from this conversation, and this entry. The prompts' texts are exact; the outcomes are summaries of what was actually run and seen.
+- **M5 statements corrected.** Table rows 18 and 19, the "Commit." bullet and the outcome of prompt 19, and the outcome of prompt 18: "not pushed" and "hash unknown" are replaced by the verified history: created as `d4c2325`, amended twice by the owner (`73d7f2d`, then `182232b`), pushed as `182232b`, then deployed. The amends are recorded as the owner's manual operations; the final message has no co-author trailer (checked).
+- **CI result: recorded as unverified.** The prompt refers to a screenshot of a green M5 CI run. No screenshot was visible to the assistant in this conversation, and none is stored in the repository, so it cannot be tied to commit `182232b`. Consequently the PostgreSQL test run and the `container` job are **not** recorded as passed anywhere in this log. If the screenshot shows a completed run on `182232b`, that fact, with the run's commit SHA, can be added by the owner.
+- **State of M6 at the time of writing** (read-only Git commands): HEAD `182232b` equals `origin/main`; `README.md` is modified (live URLs, deployment status, coverage) and uncommitted; `backend/coverage.txt` exists, generated from the 812 passing tests, and is untracked; this `PROMPTS.md` change is uncommitted; **`SUBMISSION.md` does not exist yet**; there is no `v1.0` tag; no M6 commit exists; repository visibility and the GitHub Actions result are unverified.
+
+**Dated notes added in prompt 32 (2026-10-18; the original wording above is kept as history):**
+
+- **CI result.** The "recorded as unverified" bullet was true when written. It was verified afterwards (prompt 28): GitHub Actions [run 39142792206](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39142792206) on `182232b2789e08a8b01f535016c2ca60cfb4d29a` passed all three jobs. The screenshot mentioned in the prompt was never seen by the assistant; the result was read from GitHub's public API instead, as step conclusions only (the job logs need a login).
+- **Repository visibility.** "Unverified" and "private" statements in prompts 20, 21 and 24 were true at the time. The repository was made public afterwards and confirmed public in prompt 28 (page, API and `git ls-remote` answer without credentials).
+- **`SUBMISSION.md`.** "Does not exist yet" is outdated: it was created in prompt 25, trimmed in prompt 26 and updated for the passing CI run in prompt 29. Its M6 date and hash are still placeholders.
+- **README.** The README statements that the CI result was unseen were corrected in prompt 31, which also rewrote section 12 (AI disclosure).
+- **Still true:** `README.md`, this file, `SUBMISSION.md` and `backend/coverage.txt` are uncommitted, there is no M6 commit and no `v1.0` tag, and no screenshot of CI was provided.
+
+**Outcome:** Used. Facts that later changed are in the dated notes above.
+
+---
+
+## Prompt 25 — Create SUBMISSION.md (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Create `SUBMISSION.md` for the KJBN Labs Software Engineering Internship take-home assignment, Equipment Rental Desk.
+> Scope: Create or edit `SUBMISSION.md` only. Do not modify any other file. Do not run any Git commands that change repository state, and do not commit, amend, push, tag, reset, or change Git history. Do not add any `Co-Authored-By` trailers.
+> Requirements
+>
+> 1. Read the assignment instructions and the existing repository documentation, especially `README.md` and `PROMPTS.md`, before drafting. Follow the assignment's exact `SUBMISSION.md` requirements and A–G structure.
+> 2. Keep the final document within two pages. Be concise, specific, professional, and evidence-based.
+> 3. Include all seven milestones, M0–M6, with dates and actual commit hashes wherever verified:
+>    * M0: `65839f7`
+>    * M1: `0abe7cf`
+>    * M2: `2b45b98`
+>    * M3: `d5029e4`
+>    * M4: `9d4930e`
+>    * M5: `182232b`
+>    * M6: the commit has not yet been created. Use an explicit placeholder such as `[M6 commit hash — fill after commit]`; do not invent a hash.
+> 4. Include the required A–G sections:
+>    * A: Five-sentence project summary.
+>    * B: Three important design decisions, approximately 80 words each.
+>    * C: Hardest implementation challenge, approximately 150 words, referencing verified commit hashes.
+>    * D: Error-handling flow, approximately 150 words.
+>    * E: Milestone table covering M0–M6, with dates and hashes as available.
+>    * F: Five prioritized next steps.
+>    * G: Self-assessment against all 11 rubric categories, with honest scores and brief justifications.
+> 5. Base claims on actual repository evidence. The deployed frontend is `https://equipment-rental-desk.vercel.app` and the backend is `https://rental-desk-api.onrender.com`. The backend health endpoint is `/health`.
+> 6. The latest full backend test run reported 812 passed and 99% overall coverage; business rules also report 99%, with `app/domain/rules.py` at 100%. The generated report is `backend/coverage.txt`. State that these results came from the local SQLite test run; do not imply PostgreSQL tests passed unless verified evidence supports that claim.
+> 7. The frontend checks previously reported 176 tests passing, plus lint, formatting, type-check and production build success. Distinguish recorded results from anything not re-run.
+> 8. Deployment smoke checks previously verified the backend health endpoint, seeded item/member counts, overdue endpoint, API docs, CORS behavior and deep links. The Members and Overdue pages were reported working by the owner but were not independently rechecked in the latest audit. Do not claim otherwise.
+> 9. GitHub Actions status and repository visibility are still pending confirmation. Do not claim the latest CI passed or that the repository is public unless you can verify it.
+> 10. Explain the reviewer test clock (`X-Test-Clock`) accurately and mention its configured deployment status only if supported by the repository configuration and deployment notes.
+> 11. Use the actual rubric categories from the assignment, not invented categories. If a rubric score or detail cannot be substantiated, flag it for owner review instead of fabricating evidence.
+> 12. Keep the content aligned with `README.md` and `PROMPTS.md`; do not silently resolve contradictions by inventing facts.
+>
+> Before finishing
+>
+> * Check that all A–G sections are present and correctly ordered.
+> * Check the two-page limit as far as possible with the available tooling.
+> * Report which file you changed, the major sections included, any placeholders, and any facts that need owner verification.
+> * Do not run Git-changing commands and do not edit any other file.
+>
+> Only create/edit `SUBMISSION.md`, then stop and report your findings.
+
+**What the assistant did:** created `SUBMISSION.md`; no other file was edited and no Git command that changes anything was run.
+
+- **Sources.** The assignment's SUBMISSION.md and rubric requirements (text extracted from the assignment PDFs earlier in the session; the PDFs are not in the repository), `README.md`, `PROMPTS.md`, `backend/coverage.txt`, `git log` dates and hashes.
+- **Content.** Sections A to G in the required order: a five-sentence summary; three design decisions (derived balance, time-dependent state computed without a scheduler, one transaction per use case with locks); the hardest part (the stale `check_out` read, fix in `2b45b98`, and the year-9999 test-clock overflow, fix in `d5029e4`); an error-handling table; a milestone table with `65839f7`, `0abe7cf`, `2b45b98`, `d5029e4`, `9d4930e`, `182232b` and explicit placeholders for the M6 date and hash; five next steps; and the 11 rubric criteria with weights and scores 4, 4, 4, 3, 4, 4, 4, 4, 3, 2, 4.
+- **Qualifications written in.** The 812-test and 99% results are labelled as the local SQLite run; frontend results are labelled as recorded earlier, not re-run; at that time CI and repository visibility were stated as unconfirmed; deployment checks were limited to the read-only ones actually made. An HTML comment at the top listed what the owner had to confirm.
+- **Length.** The file was rendered through headless Chrome (outputs outside the repository) and trimmed over several rounds. The reply reported it fitting two pages at 10 pt and about 2.2 pages at 11 pt. In prompt 26 the heights reported for the smaller fonts were found to be clamped by the browser viewport and so overstated.
+
+**Outcome:** Used. Tightened and corrected in prompt 26.
+
+---
+
+## Prompt 26 — Final documentation review and trimming of SUBMISSION.md (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Perform the final documentation review for the Equipment Rental Desk take-home assignment.
+> Scope: Edit only `SUBMISSION.md`. Do not modify any other file. Do not run any Git commands that change repository state. Do not commit, amend, push, tag, reset, or change Git history. Do not add any `Co-Authored-By` trailers.
+> Tasks
+>
+> 1. Read `SUBMISSION.md` and the assignment's original requirements.
+> 2. Remove the invisible HTML owner-checklist comment at the top.
+> 3. Trim redundant wording so the document fits comfortably within two printed pages at a readable font size. Preserve all seven A–G sections, the three design decisions, the error-handling explanation, all seven milestone rows, five next steps, and all 11 rubric categories with their weights and honest self-assessment scores.
+> 4. Preserve the M6 date and hash placeholders. Do not invent a commit hash or date.
+> 5. Keep all factual qualifications:
+>    * Backend: 812 tests passed and 99% overall coverage in the recorded local SQLite run.
+>    * PostgreSQL test results and the relevant GitHub Actions jobs remain unconfirmed unless verifiable evidence is available.
+>    * Frontend results are recorded from the earlier M5 review, not a fresh run for this document.
+>    * Deployment checks must not be described as broader than those actually verified.
+> 6. Check the design-decision descriptions, milestone hashes, error-handling details, and rubric category names against the repository and assignment. Correct only demonstrable inaccuracies; flag anything uncertain rather than guessing.
+> 7. Measure the final document's rendered print length if tooling is available. Aim for two pages with reasonable margins and readable text, not tiny fonts or excessive margin reductions.
+>
+> Final report
+> Report:
+>
+> * Whether `SUBMISSION.md` fits within two pages and the settings used to check it.
+> * Which sections were shortened.
+> * Any remaining placeholders or facts that require owner verification.
+> * Confirmation that only `SUBMISSION.md` was edited and no Git-changing commands were run.
+>
+> Stop after this review. Do not start the analytics dashboard yet.
+
+**What the assistant did:** edited only `SUBMISSION.md`; no Git command that changes anything was run.
+
+- **Changes.** Removed the HTML owner comment (its checklist was given in the reply instead) and trimmed sections A, B, C, D, F and G. All seven sections, three decisions, the error table, seven milestone rows, five next steps and 11 rubric rows with weights and scores were kept, as were the M6 placeholders and the SQLite, recorded-frontend and PostgreSQL-unconfirmed qualifications.
+- **Corrections after checking against the repository.** Decision 3 had said every call locks the member and then the item; only `reserve_item` and `check_out` lock both (`services/loans.py` lines 62-63 and 107-108), so it now says "calls that touch both". The Deployment row had called Compose and the deploy path "live"; it now states only what was checked (files committed, the live API serves seeded data, CORS refused a foreign origin). The 11 rubric names, the weights (sum 100), the six hashes and the dates were checked against the assignment text and `git log`.
+- **Length, remeasured.** The earlier readings for the smaller fonts were clamped by the viewport height. With the body's own height: 1.83 pages at 10.5 pt with 18 mm margins (printed as 2 pages), about 1.65 pages at 10 pt with 15 mm margins, and 2.01 pages at 11 pt with 20 mm margins (printed as 3, roughly one line over).
+- **Owner checks listed in the reply:** the M6 date and hash, the CI result, repository visibility, Render logs, the Members and Overdue pages, the scores, and one inference ("SQLite serialises requests, so the tests passed") that rests on the M2 review in prompts 8 and 9.
+
+**Outcome:** Used.
+
+---
+
+## Prompt 27 — Read-only final repository and CI status audit (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Perform a read-only final repository and CI status audit for the Equipment Rental Desk take-home assignment.
+> Strict restrictions: Do not edit, create, or delete any files. Do not run Git commands that change repository state. Do not commit, amend, push, tag, reset, switch branches, or change Git history. Do not add co-author trailers.
+> 1. GitHub Actions
+>
+> * Inspect the available GitHub Actions status for the repository.
+> * Determine whether a completed run corresponds exactly to commit `182232b2789e08a8b01f535016c2ca60cfb4d29a`.
+> * Check the PostgreSQL test run and `container` job separately.
+> * Report each job as passed, failed, in progress, or unverified. Include the run URL and commit SHA when available.
+> * Do not infer that CI passed merely because the commit exists or another run is green.
+>
+> 2. Repository visibility
+>
+> * Determine whether `https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk` is public or private, using available read-only evidence.
+> * If visibility cannot be verified, say so. Do not change it.
+>
+> 3. Local working tree
+>
+> * Use read-only commands to report the current branch, `HEAD`, whether the working tree is clean, and the status of these intended submission files:
+>    * `README.md`
+>    * `PROMPTS.md`
+>    * `SUBMISSION.md`
+>    * `backend/coverage.txt`
+> * Confirm the latest M5 commit remains `182232b` and report whether a `v1.0` tag exists.
+> * Do not stage or alter anything.
+>
+> 4. Report
+> Return a concise table with each check, evidence, status and recommended next action. Clearly separate verified facts from assumptions. Do not edit files or take any action that changes repository state.
+
+**What the assistant did:** read-only; no file was edited and no Git command that changes anything was run.
+
+- **Local state.** Branch `main`, HEAD `182232b2789e08a8b01f535016c2ca60cfb4d29a`, equal to `origin/main`; the reflog showed `d4c2325`, `73d7f2d`, `182232b` (two amends); no staged files; `README.md` and `PROMPTS.md` modified, `SUBMISSION.md` and `backend/coverage.txt` untracked; no local or remote tag, so no `v1.0`. The subject of `182232b` begins with an invisible byte-order mark and has no `type(scope):` prefix.
+- **Visibility.** Strong evidence that the repository was private: the page, the Actions page, the API and the workflow badge all returned 404 without credentials; Git without stored credentials failed to authenticate; the owner's list of 28 public repositories did not include it. It did exist (authenticated `git ls-remote` worked). The visibility setting itself could not be read.
+- **CI.** Unverified for all jobs: with no access to the Actions API or page, no run, URL or SHA could be reported, and the browser pane was not signed in. Nothing was inferred from the commit existing.
+- **Reply.** A table of checks with evidence, status and next action, and a recommended order: read the run for `182232b`, make the repository public, commit the four files, tag.
+
+**Outcome:** Used. The owner then made the repository public (prompt 28).
+
+---
+
+## Prompt 28 — Read-only verification after the repository was made public (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Perform a read-only verification now that the Equipment-Rental-Desk repository has been made public.
+> Repository: https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk
+> Strict rules:
+>
+> * Do not edit or create files.
+> * Do not run any Git commands that change repository state.
+> * Do not commit, amend, push, tag, reset, or change Git history.
+>
+> Tasks:
+>
+> 1. Check that the repository is publicly accessible without authentication.
+> 2. Inspect GitHub Actions and find the run corresponding exactly to commit `182232b2789e08a8b01f535016c2ca60cfb4d29a`.
+> 3. Report the `backend`, `frontend`, and `container` job statuses separately. Include the run URL, commit SHA, and failure details if any.
+> 4. If no run exists for that SHA, say so explicitly. Do not use a green run from another commit as evidence.
+> 5. Report the current branch, HEAD, working-tree status, and whether `v1.0` exists, using read-only commands.
+> 6. Do not edit `SUBMISSION.md` based on your findings. Just report the evidence and recommended next step.
+>
+> Stop after the audit.
+
+**What the assistant did:** read-only; no file was edited and no Git command that changes anything was run.
+
+- **Visibility.** Public: the repository page, the Actions page and the API answered 200 without credentials, the API reported `private: false` and `visibility: public`, and `git ls-remote` with the credential helper disabled returned `main` at `182232b…`.
+- **CI.** A run exists for exactly that SHA, the only one returned for it: [run 39142792206](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39142792206), workflow `CI`, trigger `push`, attempt 1, completed with conclusion success (created 15:57:17Z, finished 15:59:44Z). Jobs, each completed with success and each reporting head SHA `182232b`: `frontend` (npm ci, lint, format check, `npm test`, `npm run build`); `backend` (Ruff check, Ruff format check, then `pytest` twice, the second with `TEST_DATABASE_URL` pointing at the PostgreSQL service, as the workflow at that commit shows); `container` (Compose validation, both image builds, backend container started against PostgreSQL, healthy, first-start checks, edit and restart, restart checks). No failures.
+- **Limits.** The job logs need authentication (HTTP 403), so test counts and output in CI were not read; the statuses are step conclusions. Seven earlier commits, including `d4c2325` and `73d7f2d`, also had green runs; they were listed for context only and not used as evidence.
+- **Local state.** `main` at `182232b`, equal to `origin/main`, nothing staged, the four files uncommitted, no `v1.0` tag locally or on the remote.
+- **Reply.** Recommended updating `SUBMISSION.md` (which then still said CI was unconfirmed), with two cautions: do not claim the CI test counts, and do not claim PostgreSQL concurrency is proven.
+
+**Outcome:** Used. `SUBMISSION.md` was updated in prompt 29.
+
+---
+
+## Prompt 29 — Update SUBMISSION.md for the public repository and passing CI (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Update `SUBMISSION.md` only. Record that the repository is public and GitHub Actions run [39142792206](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39142792206) passed all three jobs on commit `182232b`, including PostgreSQL tests and container checks. Keep the 812-test/99%-coverage result clearly identified as local SQLite results. Do not claim PostgreSQL concurrency is proven. Preserve A–G, all rubric scores, the two-page limit, and M6 date/hash placeholders. Do not run Git-changing commands or edit other files. Report changes and page count.
+
+**What the assistant did:** edited only `SUBMISSION.md`; no Git command that changes anything was run.
+
+- **Changes.** The header now links the public repository. Section A, sentence 5, says the local SQLite run passed 812 backend tests at 99% coverage and that [run 39142792206](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39142792206) on `182232b` passed all three jobs (backend with PostgreSQL pytest, frontend, container), while PostgreSQL row locking under real contention remains "reasoned, not proven" (it stays five sentences; an "incl." abbreviation was replaced so it does not read as six). Section F item 1 became "Prove the row locks on PostgreSQL: a contention test that fails when a lock is removed". Four rubric rows were reworded: Business logic (concurrency tests also ran on PostgreSQL in CI; lock correctness under contention unproven), Data modelling (migration also run in CI on PostgreSQL), Testing (812 tests and 99% marked local SQLite, frontend results marked recorded at the M5 review and not re-run, CI run passed) and Deployment (container job passed).
+- **Unchanged.** Sections A to G, all rubric scores (4, 4, 4, 3, 4, 4, 4, 4, 3, 2, 4), the two M6 placeholders, and the statement that the CI log counts were not read.
+- **Length.** About 1.85 pages at 10.5 pt with 18 mm margins (2 printed pages) and 2.05 pages at 11 pt with 20 mm margins (3 printed).
+
+**Outcome:** Used.
+
+---
+
+## Prompt 30 — Review of the four pending files (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Review the pending changes in `README.md`, `PROMPTS.md`, `SUBMISSION.md`, and `backend/coverage.txt`. Check for factual inconsistencies, accidental secrets, missing assignment requirements, and unintended changes. Verify that the coverage report matches the recorded 812-test, 99% local SQLite run. Do not edit files or run Git-changing commands. Report any issues and the exact files affected.
+
+**What the assistant did:** read-only; no file was edited and no Git command that changes anything was run (an independent test collection and a read-only `coverage report` were used).
+
+- **Coverage evidence.** Verified. Both reports regenerated from the existing `.coverage` data (written 22:17:59; no app or test file newer than 11:52; no tracked backend file differing from HEAD) are identical to the tables in `backend/coverage.txt`; the file rows sum to the TOTAL line (1553 statements, 10 missed, 214 branches, 11 partial; 98.81%, shown as 99%); a fresh collection finds 812 tests (domain 225, services 134, API 341, db 57, root 55), matching the README table.
+- **Unintended changes and secrets.** The `README.md` and `PROMPTS.md` hunks against HEAD were all intended. No secrets, credentialed URLs other than the documented throwaway `rental:…@localhost` test URL, emails or real-looking phone numbers; no BOM, CRLF or mojibake in the four files.
+- **Issues reported.** (1) `README.md` still said CI was unseen and the repository's visibility unverified, contradicting `SUBMISSION.md` (lines 3, 154, 250, 516, 531, 532, with related lines 97 and 101). (2) `PROMPTS.md` ended at prompt 24 and lacked the six later prompts, and prompt 24's notes were outdated. (3) README section 12 described Claude Code as used "for scaffolding and boilerplate", which `PROMPTS.md` contradicts. (4) Still to do: the M6 commit and hash, the `v1.0` tag, trying the edge cases on the hosted version. Minor: the README's regeneration command does not reproduce the committed file byte for byte, and `SUBMISSION.md` is marginal at 11 pt.
+
+**Outcome:** Used. Issue 1 and 3 were fixed in prompt 31 and issue 2 in this prompt (32).
+
+---
+
+## Prompt 31 — Fix README.md after the review (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Fix `README.md` only.
+>
+> * Update stale statements at lines 3, 154, 250, 516, 531 and 532 to reflect that GitHub Actions run [39142792206](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39142792206) passed all jobs on `182232b`, including PostgreSQL pytest, migration and the container job.
+> * Keep the caveat that PostgreSQL row-lock correctness under real contention is not proven, and no lock-removal regression test has demonstrated failure.
+> * Correct section 12's AI disclosure: Claude Code assisted with implementation across business logic, API, UI, tests, deployment and documentation—not just scaffolding. Describe this accurately without implying all work was generated automatically.
+> * Fix any related contradictory statements, but don't rewrite unrelated sections.
+>
+> Do not edit other files or run Git-changing commands. Report the changed sections and any remaining unverified claims.
+
+**What the assistant did:** edited only `README.md`; no Git command that changes anything was run.
+
+- **CI and PostgreSQL statements updated** (lines 3, 97, 101, 154, 250, 516, 531, 532) to say that [run 39142792206](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39142792206) on `182232b` passed all three jobs. The long PostgreSQL bullet is now "What has and has not been shown on PostgreSQL": the migration, the models-versus-migration comparison, the migration reversal, the database-backed tests and the concurrency tests executed and passed on PostgreSQL in CI (their fixtures build the schema from the Alembic migration; the `container` job also passed), read as step results because the logs need a login; a few tests always use their own SQLite database. The deployment-status bullet now lists the public repository and the passing run as verified on 18 October 2026.
+- **Caveat kept.** PostgreSQL row-lock correctness under real contention is not proven: no lock-removal regression test has demonstrated a failure (the check in section 6 was only caught by an unrelated test, on SQLite), the two race replays do not test PostgreSQL's locks, and the lock-ordering argument is reasoning from the code. Also kept as unverified: NUL on PostgreSQL, the psycopg error attributes, the error-log path on a real PostgreSQL server, the two reasoned PostgreSQL risks, the full Compose stack running together, and Render's build log and settings.
+- **Section 12 rewritten.** It now says Claude Code assisted across the whole project (database model and migration, business rules and services, API, React UI, backend and frontend tests, Docker, Render, Vercel and CI configuration, and the documentation), drafting code and text from requirements and rules supplied from the assignment; that the author wrote every prompt, set each milestone's scope, requested review passes, accepted or rejected the output and made the GitHub, Render and Vercel settings; that Claude Code ran `git init` and the first form of the M5 commit at the owner's request, ran `git checkout -- backend/tests` on its own initiative during M2 to restore test files corrupted by an encoding round trip, and pushed, tagged and deployed nothing (the entry first said Claude Code ran "only the Git commands explicitly requested", which was inaccurate and was corrected in prompt 34); and that it was not used to generate the project in one pass. The wording about the author's role is the assistant's reading of this log and should be confirmed by the owner.
+- **Checks.** The 13 required headings are unchanged and in order; no BOM or CRLF; none of the old stale phrases remain.
+
+**Outcome:** Used. Uncommitted.
+
+---
+
+## Prompt 32 — Extend this log (2026-10-18, Claude Code)
+
+**Prompt (verbatim):**
+
+> Update `PROMPTS.md` only.
+>
+> Add entries 25–30 for the six subsequent user prompts and Claude outcomes: creating `SUBMISSION.md`, trimming it, the read-only CI/repository audit, public-repository verification, updating submission claims after CI passed, and the final four-file audit that identified README/PROMPTS issues.
+>
+> Follow the existing log format. Record the outcomes accurately without inventing exact prompt wording. Add dated notes to prompt 24 for facts that became outdated, preserving its original history. Include the README corrections and broader AI disclosure from the latest step.
+>
+> Do not edit other files or run Git-changing commands. Report the entries added and any remaining gaps.
+
+**What the assistant did:** edited only `PROMPTS.md`; no Git command that changes anything was run.
+
+- **Entries.** Prompts 25 to 30 (the six requested), plus 31 (the README correction and the broader AI disclosure) and this entry 32, so that every prompt is logged. The prompt texts are taken verbatim from the session record, with the surrounding paste markers removed; the outcomes summarise what was actually run and found. The table gained rows 25 to 32.
+- **Dated notes on prompt 24.** Added without changing its original text: CI later verified (prompt 28, run 39142792206, step results only, no screenshot seen), repository later public (prompt 28), `SUBMISSION.md` created and updated (prompts 25, 26, 29), the README CI statements corrected (prompt 31), and what is still true. Its table row and outcome were closed from "Pending review" with a pointer to those notes.
+- **State at the time of writing:** HEAD `182232b` equals `origin/main`; `README.md` and `PROMPTS.md` are modified, `SUBMISSION.md` and `backend/coverage.txt` are untracked, nothing is committed.
+- **Remaining gaps.** The M6 commit, and with it the M6 date and hash placeholders in `SUBMISSION.md`; the `v1.0` tag; the commit subject of `182232b`, which has a byte-order mark and no Conventional Commit type; the checklist item of trying every edge case on the hosted version; the CI job logs (test counts) and the PostgreSQL row-lock correctness under contention, which are unverified; the Members and Overdue pages, reported working but not re-checked; the README's regeneration command not reproducing `coverage.txt` byte for byte; and any prompts after this one, which will need their own entries.
+
+**Outcome:** Used. Checked by the consistency audit in prompt 33, which found two items that were corrected in prompt 34.
+
+---
+
+## Prompt 33 — Final read-only consistency audit (2026-10-18, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Do a final read-only consistency check across `README.md`, `PROMPTS.md`, `SUBMISSION.md`, and `backend/coverage.txt`. Check assignment requirements, AI disclosure consistency, CI claims, test/coverage figures, milestone hashes, M6 placeholders, and the two-page limit. Do not edit files or run Git-changing commands. Report only blocking issues and necessary corrections.
+
+**What the assistant did:** read-only; no file was edited and no Git command that changes anything was run (a collection-only test run and read-only `coverage report` calls were used).
+
+- **Consistent.**
+  - `backend/coverage.txt`: identical to fresh `coverage report` output from the `.coverage` data it was made from (written 22:17:59; no later test run); its rows sum to 1553 statements, 10 missed, 214 branches, 11 partial (98.81%, shown as 99%); the README coverage table matches it.
+  - A fresh collection finds 812 tests (225 + 134 + 341 + 57 + 55), as in the README and `SUBMISSION.md`.
+  - The six milestone hashes exist and carry the dates in `SUBMISSION.md`.
+  - The only unresolved placeholders are the M6 date and hash in `SUBMISSION.md`.
+  - The CI run 39142792206 on `182232b` was re-read from the public API: completed, success, with `frontend`, `backend` and `container` all passing, and the repository public. No remaining line in the README or `SUBMISSION.md` calls CI unseen or unconfirmed.
+  - `SUBMISSION.md`: A to G headings in the assignment's order, section A five sentences, C about 113 words, D about 98, seven milestone rows, five next steps, 11 rubric rows with weights summing to 100.
+  - The README keeps its 13 headings and its relative links resolve; none of the four files has a BOM, CRLF or mojibake.
+  - Print length (headless Chrome, outputs outside the repository): 1.85 pages at 10.5 pt with 18 mm margins and 1.65 pages at 10 pt with 15 mm margins (2 printed pages each), 2.05 pages at 11 pt with 20 mm margins (3 printed pages).
+  - The live API's `/health` and the UI's `/items` still answered.
+- **Findings.** (1) The AI disclosure said Claude Code "ran only the Git commands I explicitly asked for". The session record shows it also ran `git checkout -- backend/tests` twice during M2 on its own initiative to restore test files corrupted by a PowerShell encoding round trip (the prompt 7 entry mentions the corruption, not the restore); the same inaccurate wording was in the prompt 31 entry. (2) This prompt was not yet logged. (3) Still open for submission: the M6 commit with its date and hash, and the `v1.0` tag. Non-blocking: design decision 1 in `SUBMISSION.md` is about 41 words against "~80", the `182232b` subject has a byte-order mark and no Conventional Commit type, and the README's coverage regeneration command does not reproduce `coverage.txt` byte for byte.
+
+**Outcome:** Used. Findings 1 and 2 were corrected in prompt 34; finding 3 needs the owner's Git steps.
+
+---
+
+## Prompt 34 — Correct the AI-disclosure history and log prompt 33 (2026-10-18, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Fix the AI-disclosure history in `README.md` and the corresponding prompt 31 entry in `PROMPTS.md`. Accurately state that, at your own initiative during M2, Claude Code ran `git checkout -- backend/tests` to restore test files corrupted by an encoding round trip; the first M5 commit was made at the owner's request. Do not claim that every Git command was explicitly requested by the owner.
+>
+> Append prompt 33 to `PROMPTS.md`, recording this final consistency audit and its findings without inventing verbatim wording. Keep the existing history intact.
+>
+> Edit only these two files. Do not run Git-changing commands, commit, amend, push, or tag. Report the changes.
+
+**What the assistant did:** edited only `README.md` and `PROMPTS.md`; no Git command that changes anything was run.
+
+- **Checked first.** Every Git command Claude Code ran in the session was classified from the session record. The state-changing ones were: `git init -b main` and a dry-run `git add -n --all` (prompt 3); `git checkout -- backend/tests`, twice, during M2 (the tool descriptions were "Restore mangled tests from git, redo marker removal in UTF-8" and "Restore committed test files"), which the assistant did on its own initiative; and `git add` of the M5 files and `git commit -F` for the first form of the M5 commit (`d4c2325`) in prompt 19. The remaining Git commands (status, diff, log, show, ls-remote, reflog, branch and tag listings, config reads) only read the repository. No push, tag, fetch or deploy was run.
+- **`README.md` section 12.** The sentence claiming only requested Git commands was replaced by an accurate statement: `git init` and the first M5 commit were at the owner's request; `git checkout -- backend/tests` (twice, during M2) was on Claude Code's own initiative to restore test files corrupted by an encoding round trip, after which the intended edits were redone; the other Git commands only read the repository or were dry runs; nothing was pushed, tagged or deployed by Claude Code.
+- **Prompt 31 entry.** The matching clause was corrected in place, and it now records that it first said "only the Git commands explicitly requested", which was inaccurate. The rest of the entry is unchanged.
+- **This log.** Entries 33 and 34 were appended (the second so that this prompt is also logged), table rows 33 and 34 were added, and rows and outcomes for prompt 32 were closed from "Pending review". Earlier history is otherwise intact.
+- **Still open.** The M6 commit, and with it the M6 date and hash in `SUBMISSION.md`; the `v1.0` tag; unread CI job logs (no test counts); PostgreSQL row-lock correctness under real contention (unproven); the hosted edge-case run-through; the Members and Overdue pages (reported working, not re-checked). Any later prompts need their own entries.
+
+**Outcome:** Pending review.
