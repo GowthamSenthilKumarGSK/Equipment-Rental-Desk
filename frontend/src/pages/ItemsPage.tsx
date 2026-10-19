@@ -3,7 +3,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { AddItemForm } from "../components/AddItemForm";
 import { SelectField, TextField } from "../components/Field";
+import { EmptyState } from "../components/EmptyState";
+import { Icon } from "../components/Icon";
+import { Stat, Stats, type Tone } from "../components/Kpis";
 import { ErrorNotice, Loading } from "../components/Notice";
+import { PageHeader } from "../components/PageHeader";
+import { SkeletonCards } from "../components/Skeleton";
 import { Pager, PastTheEnd } from "../components/Pager";
 import { StatusBadge } from "../components/StatusBadge";
 import { availabilityText } from "../availability";
@@ -11,11 +16,88 @@ import { formatRupees } from "../format";
 import { ITEM_STATUS_LABELS } from "../messages";
 import { isPastEnd } from "../paging";
 import type { ItemStatus } from "../types";
-import { useAsync } from "../useAsync";
+import { useAsync, type AsyncState } from "../useAsync";
 import { useTitle } from "../useTitle";
 
 const PAGE_SIZE = 12;
 const STATUSES = Object.keys(ITEM_STATUS_LABELS) as ItemStatus[];
+
+const STATUS_TONES: Record<ItemStatus, Tone> = {
+  available: "ok",
+  reserved: "info",
+  checked_out: "warn",
+  overdue: "danger",
+  under_maintenance: "orange",
+};
+
+type Counts = { total: number; byStatus: Record<ItemStatus, number> };
+interface Inventory {
+  categories: string[];
+  /** Null when the counts could not be worked out; the list below still works. */
+  counts: Counts | null;
+}
+
+/** One request per status, each asking for a single record and reading its `total`. */
+function loadCountsByStatus(signal: AbortSignal): Promise<Counts> {
+  return Promise.all([
+    api.listItems({ limit: 1 }, signal),
+    ...STATUSES.map((status) => api.listItems({ status, limit: 1 }, signal)),
+  ]).then(([all, ...byStatus]) => ({
+    total: all.total,
+    byStatus: Object.fromEntries(
+      STATUSES.map((status, i) => [status, byStatus[i].total]),
+    ) as Record<ItemStatus, number>,
+  }));
+}
+
+/**
+ * The category choices and the inventory counts come from one request for up to 200 items. When
+ * that request holds every item, the counts are simply tallied from it. Only for a larger
+ * inventory does the page fall back to asking the API for each status's total.
+ */
+async function loadInventory(signal: AbortSignal): Promise<Inventory> {
+  const everything = await api.listItems({ limit: 200 }, signal);
+  const categories = [...new Set(everything.results.map((item) => item.category))].sort();
+  if (everything.results.length >= everything.total) {
+    const byStatus = Object.fromEntries(STATUSES.map((status) => [status, 0])) as Record<
+      ItemStatus,
+      number
+    >;
+    for (const item of everything.results) byStatus[item.status] += 1;
+    return { categories, counts: { total: everything.total, byStatus } };
+  }
+  return { categories, counts: await loadCountsByStatus(signal).catch(() => null) };
+}
+
+function InventorySummary({ state }: { state: AsyncState<Inventory> }) {
+  if (state.loading && !state.data) return <SkeletonCards count={6} />;
+  const counts = state.data?.counts;
+  if (!counts) {
+    return (
+      <p className="hint">
+        The inventory summary is not available right now.{" "}
+        <button type="button" className="link-button" onClick={state.reload}>
+          Retry the summary
+        </button>
+      </p>
+    );
+  }
+  const { total, byStatus } = counts;
+  return (
+    <Stats label="Inventory summary" compact>
+      <Stat label="All items" value={String(total)} to="/items" />
+      {STATUSES.map((status) => (
+        <Stat
+          key={status}
+          label={ITEM_STATUS_LABELS[status]}
+          value={String(byStatus[status])}
+          tone={STATUS_TONES[status]}
+          to={`/items?status=${status}`}
+        />
+      ))}
+    </Stats>
+  );
+}
 
 function SearchBox({ initial, onSearch }: { initial: string; onSearch: (text: string) => void }) {
   const [text, setText] = useState(initial);
@@ -60,17 +142,24 @@ export default function ItemsPage() {
   const items = useAsync(`items:${q}|${category}|${status}|${offset}`, (signal) =>
     api.listItems({ q, category, status, limit: PAGE_SIZE, offset }, signal),
   );
-  const categories = useAsync("categories", (signal) =>
-    api
-      .listItems({ limit: 200 }, signal)
-      .then((page) => [...new Set(page.results.map((item) => item.category))].sort()),
-  );
+  const inventory = useAsync("inventory", loadInventory);
   const filtered = Boolean(q || category || status);
   const pastEnd = items.data ? isPastEnd(items.data.total, offset) : false;
 
   return (
     <>
-      <h1>Items</h1>
+      <PageHeader
+        title="Items"
+        description="Every item on the shelf: what is free to lend, what is out and when it is due back."
+      />
+      <InventorySummary state={inventory} />
+      <AddItemForm
+        categories={inventory.data?.categories ?? []}
+        onCreated={() => {
+          items.reload();
+          inventory.reload();
+        }}
+      />
       <div className="toolbar" role="group" aria-label="Filter items">
         <SearchBox key={q} initial={q} onSearch={(text) => change({ q: text })} />
         <SelectField
@@ -79,7 +168,7 @@ export default function ItemsPage() {
           onChange={(event) => change({ category: event.target.value })}
         >
           <option value="">All categories</option>
-          {(categories.data ?? []).map((name) => (
+          {(inventory.data?.categories ?? []).map((name) => (
             <option key={name} value={name}>
               {name}
             </option>
@@ -100,7 +189,7 @@ export default function ItemsPage() {
       </div>
 
       {items.error && <ErrorNotice error={items.error} onRetry={items.reload} />}
-      {items.loading && !items.data && <Loading what="items" />}
+      {items.loading && !items.data && <Loading what="items" shape="list" />}
       {pastEnd && items.data && (
         <PastTheEnd
           total={items.data.total}
@@ -110,32 +199,47 @@ export default function ItemsPage() {
         />
       )}
       {items.data && items.data.results.length === 0 && !pastEnd && (
-        <div className="empty">
-          <p>{filtered ? "No items match these filters." : "There are no items yet."}</p>
-          {filtered && (
-            <Link to="/items" className="button button--secondary">
-              Clear filters
-            </Link>
-          )}
-        </div>
+        <EmptyState
+          icon="search"
+          action={
+            filtered && (
+              <Link to="/items" className="button button--secondary">
+                Clear filters
+              </Link>
+            )
+          }
+        >
+          {filtered ? "No items match these filters." : "There are no items yet."}
+        </EmptyState>
       )}
       {items.data && items.data.results.length > 0 && (
-        <ul className="cards" aria-label="Items">
-          {items.data.results.map((item) => (
-            <li key={item.id} className="card">
-              <div className="card__main">
-                <h2>
-                  <Link to={`/items/${item.id}`}>{item.name}</Link>
-                </h2>
-                <p className="muted">
-                  {item.category} · replacement value {formatRupees(item.replacement_value_paise)}
+        <>
+          <div className="list-head" aria-hidden="true">
+            <span>Item</span>
+            <span>Availability</span>
+            <span>Status</span>
+          </div>
+          <ul className="cards" aria-label="Items">
+            {items.data.results.map((item) => (
+              <li key={item.id} className="row row--item">
+                <div className="row__main">
+                  <h2>
+                    <Link to={`/items/${item.id}`}>{item.name}</Link>
+                  </h2>
+                  <p className="muted">
+                    {item.category} · replacement value {formatRupees(item.replacement_value_paise)}
+                  </p>
+                </div>
+                <p className="row__avail">
+                  <Icon name="calendar" size={14} /> {availabilityText(item)}
                 </p>
-                <p>{availabilityText(item)}</p>
-              </div>
-              <StatusBadge status={item.status} />
-            </li>
-          ))}
-        </ul>
+                <div className="row__badge">
+                  <StatusBadge status={item.status} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       {items.data && (
         <Pager
@@ -146,14 +250,6 @@ export default function ItemsPage() {
           onOffsetChange={(next) => change({ page: String(next / PAGE_SIZE + 1) })}
         />
       )}
-
-      <AddItemForm
-        categories={categories.data ?? []}
-        onCreated={() => {
-          items.reload();
-          categories.reload();
-        }}
-      />
     </>
   );
 }

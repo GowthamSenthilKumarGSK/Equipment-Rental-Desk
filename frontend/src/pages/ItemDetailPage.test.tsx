@@ -270,9 +270,19 @@ describe("item detail: actions", () => {
   });
 
   it.each([
-    ["Cancel reservation", "DELETE /items/1/reservation", "Reservation cancelled."],
-    ["Put under maintenance", "POST /items/1/maintenance", "The item is now under maintenance."],
-  ])("%s", async (label, route, message) => {
+    [
+      "Cancel reservation",
+      "Yes, cancel reservation",
+      "DELETE /items/1/reservation",
+      "Reservation cancelled.",
+    ],
+    [
+      "Put under maintenance",
+      "Yes, start maintenance",
+      "POST /items/1/maintenance",
+      "The item is now under maintenance.",
+    ],
+  ])("%s, after the confirmation", async (label, confirm, route, message) => {
     const api = mockApi({
       "GET /items/1": {
         body: makeItem({
@@ -286,9 +296,104 @@ describe("item detail: actions", () => {
     const { user } = renderApp("/items/1");
 
     await user.click(await screen.findByRole("button", { name: label }));
+    const dialog = await screen.findByRole("dialog");
+    expect(api.callsTo(route)).toHaveLength(0); // nothing is sent until the dialog is confirmed
+    await user.click(within(dialog).getByRole("button", { name: confirm }));
 
     expect(await screen.findByRole("status")).toHaveTextContent(message);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(api.callsTo(route)).toHaveLength(1);
+  });
+
+  it("sends nothing when the confirmation is declined, and returns focus to the button", async () => {
+    const api = mockApi({
+      "GET /items/1": {
+        body: makeItem({
+          status: "reserved",
+          current_loan: reservedLoan,
+          allowed_actions: ["check_out", "cancel_reservation"],
+        }),
+      },
+    });
+    const { user } = renderApp("/items/1");
+
+    const opener = await screen.findByRole("button", { name: "Cancel reservation" });
+    await user.click(opener);
+    const dialog = await screen.findByRole("dialog", { name: "Cancel this reservation?" });
+    expect(within(dialog).getByRole("button", { name: "Keep reservation" })).toHaveFocus();
+    await user.click(within(dialog).getByRole("button", { name: "Keep reservation" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+    expect(api.callsTo("DELETE /items/1/reservation")).toHaveLength(0);
+  });
+
+  it("moves focus to the result when the button that was used is gone afterwards", async () => {
+    let cancelled = false;
+    mockApi({
+      "GET /items/1": () => ({
+        body: cancelled
+          ? makeItem()
+          : makeItem({
+              status: "reserved",
+              current_loan: reservedLoan,
+              allowed_actions: ["check_out", "cancel_reservation"],
+            }),
+      }),
+      "DELETE /items/1/reservation": () => {
+        cancelled = true;
+        return { body: makeLoan({ status: "cancelled" }) };
+      },
+    });
+    const { user } = renderApp("/items/1");
+
+    await user.click(await screen.findByRole("button", { name: "Cancel reservation" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", {
+        name: "Yes, cancel reservation",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Cancel reservation" })).not.toBeInTheDocument(),
+    );
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("Reservation cancelled.");
+    await waitFor(() => expect(status).toHaveFocus());
+  });
+
+  it("does not take focus away from a control that is still there", async () => {
+    mockApi({
+      "GET /items/1": { body: makeItem({ allowed_actions: ["check_out", "start_maintenance"] }) },
+      "POST /items/1/check-out": {
+        body: makeLoan({ status: "checked_out", due_at: "2026-10-26T10:00:00Z" }),
+      },
+    });
+    const { user } = renderApp("/items/1");
+    const button = await screen.findByRole("button", { name: "Check out" });
+    button.focus();
+
+    await user.click(button);
+    await screen.findByRole("status");
+    await waitFor(() => expect(button).not.toBeDisabled());
+
+    expect(screen.getByRole("status")).not.toHaveFocus();
+  });
+
+  it("closes the confirmation with Escape", async () => {
+    const api = mockApi({
+      "GET /items/1": {
+        body: makeItem({ allowed_actions: ["start_maintenance"] }),
+      },
+    });
+    const { user } = renderApp("/items/1");
+
+    await user.click(await screen.findByRole("button", { name: "Put under maintenance" }));
+    await screen.findByRole("dialog");
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(api.callsTo("POST /items/1/maintenance")).toHaveLength(0);
   });
 
   it("ends maintenance", async () => {
