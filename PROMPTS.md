@@ -8,6 +8,8 @@ Rules for this file:
 - Fill in the **Outcome** only after reviewing the result. Leave it as `Pending` until then.
 - Autocomplete suggestions do not need logging; anything typed as a request does.
 
+**Note on commit hashes (added 19 October 2026).** The history was rewritten after the work: commit messages changed and so every hash did, while file trees and dates did not. Entries written earlier cite the original hashes and are left as written; README section 11 has the table of original and current hashes.
+
 | #   | Date       | Milestone | Tool                      | Outcome (used as-is / edited / rejected) |
 | --- | ---------- | --------- | ------------------------- | ---------------------------------------- |
 | 1   | 2026-10-17 | M0        | Claude Code (Sonnet 5.5)  | Used: scaffold kept after the review and git fixes in prompts 2-3; committed as 65839f7 |
@@ -80,7 +82,10 @@ Rules for this file:
 | 66  | 2026-10-19 | Audit     | Claude Code (Sonnet 5.5)  | Used: final read-only verification of the documentation fixes; all five checks passed; no file was edited; documentation confirmed ready to commit |
 | 67  | 2026-10-19 | Audit     | Claude Code (Sonnet 5.5)  | Used: entry 65 closed; entries 66 and 67 added; README disclosure updated; its read-only checks passed; the count it set was updated in prompt 69 |
 | 68  | 2026-10-19 | Audit     | Claude Code (Sonnet 5.5)  | Used: read-only audit of the README against the Git history, CI and production; both merged PRs are in production; one discrepancy found (production now has 14 items, not 13); no production writes; no file changed (entry added in prompt 69) |
-| 69  | 2026-10-19 | Audit     | Claude Code (Sonnet 5.5)  | Pending review: README item count corrected and the 18 October count labelled; entries 67 closed and 68 and 69 added; README disclosure updated to 37 further prompts; read-only checks passed; nothing committed |
+| 69  | 2026-10-19 | Audit     | Claude Code (Sonnet 5.5)  | Used: README item count corrected and the 18 October count labelled; entry 67 closed; entries 68 and 69 added; README disclosure updated to 37 further prompts; read-only checks passed; reviewed in prompt 70 |
+| 70  | 2026-10-19 | Audit     | Claude Code (Sonnet 5.5)  | Used: final regression and submission audit; fresh backend, frontend and CI results all passed; found that the history had been rewritten and that the documents cited hashes no longer in `main`; wrote nothing to the hosted instance; no file changed (entry added in prompt 71) |
+| 71  | 2026-10-19 | Audit     | Claude Code (Sonnet 5.5)  | Used: documentation reconciliation prepared as a proposal (no tracked file changed); entries 70 and 71 added; reviewed in prompt 72, which corrected the formatting and kept the Git-hygiene score at 2 |
+| 72  | 2026-10-19 | Audit     | Claude Code (Sonnet 5.5)  | Pending review: the proposal re-checked and corrected in a folder outside the repository (hash table moved out of a bullet, score kept at 2, entry 72 added, README count 40 further prompts); no tracked file changed |
 
 ---
 
@@ -2140,5 +2145,272 @@ Business-rule delegation, status codes and error mapping for the tested inputs, 
 - **Entries 68 and 69.** Entry 68 records the audit request verbatim (its outcome is the one you asked for); this entry (69) was added in the same change because the log must contain every prompt. The request said to add "this request" as prompt 68 and to count 35 to 68; because the audit request was the unlogged one and this request is one more, the log now has 37 further prompts (35 to 69), which is what the README says. Entry 67 was closed (its own checks passed).
 - **`README.md` section 12.** The count and the read-only Git sentence now include prompts 68 and 69.
 - **Not changed.** `SUBMISSION.md` (it states no item count), code, tests, configuration, deployment, seed data, production data, commits and tags; nothing was staged or committed; no Git command that changes anything was run.
+
+**Outcome:** Used. Reviewed in prompt 70, whose audit found no problem with it.
+
+---
+
+## Prompt 70 — Final regression and submission audit (2026-10-19, Claude Code)
+
+*Sent at about 16:57 UTC. It was read-only, so it was logged in prompt 71.*
+
+**Prompt (verbatim, from the session record):**
+
+> Final Regression Testing and Submission Audit — Equipment Rental Desk
+> Act as a senior QA engineer and submission reviewer for my KJBN Labs Software Engineering Internship take-home assignment, Problem 1: Equipment Rental Desk.
+> Repository: https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk
+> Live frontend: https://equipment-rental-desk.vercel.app
+> Live backend: https://rental-desk-api.onrender.com
+> API documentation: https://rental-desk-api.onrender.com/docs
+> Critical rules
+>
+> 1. Start by inspecting the existing repository, current Git status, README.md, SUBMISSION.md, PROMPTS.md (or the prompt log in README), source code, tests, CI configuration, deployment configuration, and migration/seed files.
+> 2. Audit first; do not modify files during the initial audit.
+> 3. Do not run Git commit, push, force-push, reset, rebase, cherry-pick, or history-rewriting commands. Do not change commit messages, author/committer timestamps, branches, tags, or Git history.
+> 4. Do not expose secrets, print environment-variable values, or modify production data.
+> 5. Never claim a test, deployment, browser check, or requirement passed unless you actually verified it. Clearly distinguish automated checks from manual checks and assumptions.
+> 6. Do not weaken tests, remove coverage, or change application behavior just to make a check pass.
+>
+> Phase 1 — Create a requirement-by-requirement audit
+> Use the assignment specification and the README.md and submission checklist screenshots provided in the conversation as the source of truth. Inspect the full assignment/specification if available in the repository.
+> A. README.md — required structure
+> Verify that README.md contains every required section and the required information:
+>
+> 1. Title and one-liner: problem name/number, project name, and a factual one-sentence description.
+> 2. Live links: public UI, API base URL, API docs, and test credentials if authentication exists. Check for cold-start details where applicable.
+> 3. Tech stack: language, framework, database, hosting for each layer, and one-line justification for non-recommended choices.
+> 4. Architecture: a diagram or equivalent clear structure showing components and request/data flow, folder structure, and where business rules live.
+> 5. Running locally: prerequisites, environment setup, migration, seed data, and complete commands for backend and frontend.
+> 5a. Deployment: hosting provider, step-by-step deployment, startup/build commands, and relevant environment configuration.
+> 6. Running tests and coverage: exact one-command test instructions, how coverage is generated, the committed coverage report, and the stated percentage.
+> 7. API overview: a table of endpoints with method, path, purpose, main error codes, and authentication information if applicable.
+> 8. Business rules and assumptions: every rule from the problem statement mapped to its implementation and test, with assumptions explicitly identified.
+> 9. Error handling and logging: expected errors, status codes, validation behavior, and safe logging without leaking sensitive information.
+> 10. Reviewer aids: how to test, sample requests, and the reviewer clock override if required.
+> 11. Known limitations: honest, explicit list of incomplete, skipped, or unsupported functionality.
+> 12. AI and third-party usage: tools/models/templates/snippets used and a link to the prompt log containing every prompt used.
+>
+> Report missing headings, incomplete content, inaccurate commands, broken links, and unsupported claims.
+> B. Regression testing — application functionality
+> Inspect the actual business rules in the specification and build a traceability matrix mapping each rule to its implementation, automated test, and hosted verification where applicable.
+> Test the backend and frontend, including:
+>
+> * Items: listing, details, availability/status, and all supported operations.
+> * Members: listing, validation, and supported member operations.
+> * Rentals/loans: checkout, return, due dates, overdue calculations, and invalid transitions.
+> * Payments and fees: calculations, payment recording, validation, and duplicate or invalid operations, where implemented.
+> * Overdue page and dashboard/analytics: counts, utilization, demand/category summaries, date boundaries, and consistency with underlying data.
+> * API contracts: success responses, invalid input, missing resources, conflicts, and expected HTTP status/error formats.
+> * Business-rule boundaries: exact due-time boundaries, clock override behavior, unavailable items, invalid members, repeated requests, and other edge cases explicitly required by the specification.
+> * Data integrity: transaction rollback on failure, concurrent/duplicate actions where relevant, and persistence after requests.
+> * UI behavior: navigation, loading/empty/error states, form validation, API failures, and responsive layout.
+> * Security/configuration: no committed secrets, safe error responses/logging, correct CORS/configuration, and no accidental production-data mutation.
+>
+> Do not invent business rules. Use the actual specification and clearly flag any rule you cannot verify.
+> C. Automated quality checks
+> Identify the documented commands and run the appropriate existing checks without modifying application code:
+>
+> * Backend full test suite.
+> * Backend coverage generation and percentage verification.
+> * Frontend unit/component tests.
+> * Frontend lint.
+> * TypeScript/type checking.
+> * Production frontend build.
+> * Formatting checks.
+> * Database migration checks and seed-data checks where safely possible.
+> * CI workflow/configuration consistency.
+>
+> Record the exact command, exit status, passed/failed/skipped count, warnings, and coverage percentage. Do not substitute an old test result for a fresh run.
+> D. Hosted application checks
+> Check the deployed frontend, backend health/API routes, API docs, and hosted seed data. Verify the Items, Members, Overdue, and Dashboard pages if browser access is available.
+> Run safe read-only hosted checks first. Only execute write/edge-case tests against production if they are explicitly safe and cannot damage or contaminate real data. Otherwise, reproduce them locally or against a disposable test database and mark hosted verification as not performed.
+> Check that the hosted version corresponds to the current GitHub `main` and tagged `v1.0` deployment as far as verifiable.
+> Phase 2 — SUBMISSION.md audit
+> Verify that SUBMISSION.md follows Section 7 and stays within the exact limits in the assignment:
+>
+> * A. What I built: no more than 5 sentences.
+> * B. Three design decisions: each includes the choice, an alternative considered, why the choice was made, and what would cause reconsideration; 3 × 80 words maximum.
+> * C. The hardest part: maximum 150 words.
+> * D. How I handle failure: maximum 150 words.
+> * E. Milestone log: a table with milestone, date completed, and commit hash; 7 rows.
+> * F. If I had two more days: maximum 150 words.
+> * G. Self-assessment: 11 rows, with criterion scores and justification; compare self-scores with the criteria in the assignment.
+>
+> Count words and rows programmatically where possible. Verify every milestone hash against the actual Git history and ensure dates and commit subjects are accurate. Do not invent accomplishments or dates.
+> Phase 3 — Final submission checklist
+> Verify each checklist item as PASS, FAIL, or NOT VERIFIED, with evidence:
+>
+> 1. Public repository URL and `v1.0` tag.
+> 2. Live UI, live API, and docs URLs; test credentials if authentication exists.
+> 3. README required structure and clean-clone instructions.
+> 4. SUBMISSION.md structure, word limits, and real milestone hashes.
+> 5. One-command tests, generated and committed coverage report, and accurate stated coverage.
+> 6. Hosted seed data and documented reviewer clock override if required.
+> 7. No secrets, build output, or dependency directories committed; `.env.example` present.
+> 8. Every required edge case personally checked against the hosted application where safe.
+> 9. AI/third-party usage disclosed and every prompt recorded in PROMPTS.md or README.
+> 10. My name, phone number, and problem number included in the assignment submission email body. Do not invent or modify personal contact details; simply report whether the available submission materials confirm this.
+>
+> Phase 4 — Final report
+> Return:
+>
+> 1. Executive verdict: READY TO SUBMIT or NOT READY TO SUBMIT.
+> 2. A requirement matrix with columns: requirement, status, evidence/command, and exact corrective action.
+> 3. Regression test results with actual totals and failures.
+> 4. Hosted verification results, separating verified from unverified items.
+> 5. README and SUBMISSION.md word/row/heading audit.
+> 6. A prioritized list of only the remaining blockers and recommended fixes.
+> 7. Any checks that could not be performed and what I must manually verify.
+>
+> After the audit, do not automatically fix anything. First show me the findings and propose the smallest safe changes. Preserve the existing implementation and Git history. I will decide whether changes should be made and will personally handle Git operations.
+> Be thorough, factual, and conservative. A successful build or green CI alone is not proof that every requirement is satisfied.
+
+**What the assistant did:**
+
+- **Fresh checks.** The backend suite (1285 passed, 1 warning, exit 0, 128 s; coverage 2532 statements, 10 missed, 99%, every per-file row equal to `backend/coverage.txt`), Ruff check and format, and the frontend format check, lint, type-check, 315 tests and build, all with exit 0. A walk-through of 43 edge cases against a disposable local backend (an empty, migrated SQLite database, stopped afterwards) passed: the 47h59m, 48h00m and 48h01m hold, double check-out and return, the fee rounding and both caps, the three-loan limit, the ₹100 and 14-day boundaries, payments, suspension, malformed input and simultaneous requests.
+- **Hosted, read-only.** `GET` requests to every UI route and API route, the six analytics endpoints, and page loads in the browser pane at 320 pixels; the deployed UI was byte-identical to a fresh build of `main`'s frontend; the Render and Vercel deployment records and the CI runs on the current heads were read through GitHub's public API. Nothing was written to the hosted instance.
+- **Findings.** The remote history had been rewritten (new hashes, same trees), the `v1.0` tag had moved to the new M6 commit, `main` still held the earlier documents, and the milestone table and other references cited hashes that are not in `main`'s history. The audit reported NOT READY TO SUBMIT until the documents were reconciled, and listed the hosted edge cases the owner still has to run by hand.
+- **Changes.** No file was changed and no Git command that changes anything was run.
+
+**Outcome:** Used. The report gave the verdict above; the reconciliation was prepared in prompt 71.
+
+---
+
+## Prompt 71 — Documentation reconciliation (2026-10-19, Claude Code)
+
+*Sent at about 17:15 UTC.*
+
+**Prompt (verbatim, from the session record):**
+
+> Documentation Reconciliation and Final Submission Readiness — KJBN Labs
+> You are working on my KJBN Labs Software Engineering Internship take-home assignment: Problem 1 — Equipment Rental Desk.
+> Repository: https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk
+> Live UI: https://equipment-rental-desk.vercel.app
+> Live API: https://rental-desk-api.onrender.com
+> API docs: https://rental-desk-api.onrender.com/docs
+> Deadline: Thursday, 22 October 2026, 11:59 PM IST.
+> A previous regression audit found that the application, tests, coverage, frontend checks, and CI passed, but documentation on `main` is stale after a Git history rewrite. Reconciled documentation reportedly exists on the feature branch.
+> Absolute safety rules
+>
+> 1. Do not run any Git-changing commands. No commit, push, force-push, reset, checkout that changes the working tree, switch, merge, rebase, cherry-pick, tag modification, branch deletion, or history rewrite. I will personally handle Git operations.
+> 2. Do not change application source code, database schema, migrations, tests, deployment configuration, dependencies, or production data.
+> 3. Do not rewrite the Git history or attempt to fix commit signatures.
+> 4. Do not blindly copy documentation from another branch. Compare it with the current `main`, actual source code, current Git history, and assignment PDFs first.
+> 5. Do not invent facts, dates, prompt entries, test results, commit hashes, phone numbers, or accomplishments.
+> 6. Do not mark an item complete unless the repository or available evidence supports it.
+> 7. Do not overwrite existing documentation without showing me the proposed changes first.
+>
+> Phase 1 — Inspect safely
+> Inspect the current branch, working-tree status, `README.md`, `SUBMISSION.md`, `PROMPTS.md` (or the README prompt log), recent Git history, and the corresponding files on `feature/analytics-dashboard`.
+> Use read-only Git commands to determine:
+>
+> * Which branch is currently checked out.
+> * Whether there are uncommitted user changes.
+> * Which documentation versions are present on `main` and the feature branch.
+> * The actual current hashes for M0–M6, analytics implementation/fix, redesign, merge commits, and final documentation commit.
+> * Whether the feature branch contains any useful changes absent from `main`.
+> * Whether the current documentation accurately describes the deployed app and current history.
+>
+> Do not alter branches or switch branches to inspect them. Use read-only commands such as `git status`, `git branch`, `git log`, `git show`, `git diff`, and `git rev-parse`.
+> If the working tree contains user changes, preserve them.
+> Phase 2 — Reconcile README.md
+> Use the actual assignment PDFs as the source of truth. Ensure the README retains every required heading and the correct content for:
+>
+> 1. Title and one-liner.
+> 2. Live links and API docs.
+> 3. Tech stack and justifications.
+> 4. Architecture and folder structure.
+> 5. Local running instructions.
+> 5a. Deployment instructions.
+> 6. Running tests and coverage.
+> 7. API overview.
+> 8. Business rules and assumptions.
+> 9. Error handling and logging.
+> 10. Reviewer aids, including the test-clock override where applicable.
+> 11. Known limitations.
+> 12. AI and third-party usage, including the prompt-log link.
+>
+> Correct stale statements such as claims that the application is only on a branch, not merged, not deployed, or not rerun, but only where current evidence proves those statements are outdated.
+> Verify every documented command against the repository. Confirm the coverage percentage against the committed coverage report and latest available verified test results. Clearly distinguish fresh test results from earlier audit results.
+> Ensure README commit references point to real, relevant commits in the current history. Update the prompt count only if you actually add a legitimate missing prompt entry.
+> Phase 3 — Reconcile SUBMISSION.md
+> Verify the exact assignment-required format and limits against the PDFs. Preserve the required sections, word limits, and milestone table format.
+> Correct:
+>
+> * Old milestone hashes that no longer correspond to the current history.
+> * Any inaccurate statements about commit subjects or Git hygiene.
+> * Any claim that conflicts with the current code, history, deployment, or tests.
+>
+> Use actual commit hashes and subjects obtained from Git, not the mapping below unless verified against the current repository.
+> Where relevant, transparently disclose that commit messages were rewritten, the resulting commit hashes changed, and the file trees were validated as identical. Do not claim metadata or tree equality unless supported by available evidence.
+> Re-evaluate the Git-hygiene self-assessment honestly. Do not inflate the score or hide the history rewrite. Preserve the assignment's exact rubric and terminology.
+> Do not invent milestone dates or personal details.
+> Phase 4 — Reconcile PROMPTS.md / prompt log
+> Check the existing prompt log for completeness and formatting.
+> The previous audit reports that this final audit request may be missing from the log. Verify that claim. If a legitimate entry is missing, propose an entry that accurately describes the actual request and work performed. Do not invent a prompt that was never used or claim that an action occurred when it did not.
+> Update the README prompt count only when the actual number of entries justifies it. Preserve the existing log structure.
+> Phase 5 — Validate the proposed changes
+> After making only the approved documentation edits, verify:
+>
+> * All README headings match the assignment requirements.
+> * All cited hashes exist in the current history.
+> * The milestone table has the required number of rows.
+> * Word counts and table row counts comply with the actual PDF.
+> * README prompt count equals the actual prompt-log entries.
+> * Links and documented commands are correct.
+> * No claims contradict the deployed app or current history.
+> * No application code, tests, configuration, or generated coverage files were unintentionally modified.
+>
+> Run documentation-specific checks where available. Do not rerun expensive application tests unless a documentation change affects executable configuration or the existing test results cannot otherwise be established.
+> Show me the exact final diff and a concise explanation of every change.
+> Phase 6 — Final report
+> Return:
+>
+> 1. Files changed and why.
+> 2. Exact commit hashes verified.
+> 3. README heading and content audit.
+> 4. SUBMISSION word counts, milestone row count, and hash verification.
+> 5. Prompt-log count verification.
+> 6. Any remaining discrepancies or unverified checklist items.
+> 7. A clear list of commands I can run to review the diff and verify the working tree.
+>
+> Stop after presenting the diff and report. Do not commit, push, merge, switch branches, or perform any further Git operation. I will review the documentation and handle Git myself.
+
+**What the assistant did:**
+
+- **Read-only inspection.** The checked-out branch (`feature/analytics-dashboard`, clean), the remote refs, and the documents on `main` and on the feature branch were compared; for each of 12 original and rewritten commit pairs the file tree, author date and committer date were compared and found identical; the documents' commands, files and flags were checked against the repository.
+- **Proposal, not applied.** Because the request said not to overwrite documentation without showing the proposed changes first, the reconciled `README.md`, `SUBMISSION.md` and `PROMPTS.md` were written to a folder outside the repository and the diff was shown; no tracked file was changed by this prompt, and no Git command that changes anything was run.
+- **Proposed changes.** Current hashes and CI runs in place of the original ones; a disclosure of the rewrite with an original-to-current table in README section 11, a pointer to it in the SUBMISSION Git-hygiene row and a note at the top of this log; the Git-hygiene self-score proposed as 3 instead of 2 (the owner's call; prompt 72 withdrew this); entries 70 and 71 added and the README count set to 39 further prompts (35 to 71; 40 once entry 72 was added).
+
+**Outcome:** Used. Reviewed in prompt 72, which corrected the formatting and kept the Git-hygiene score at 2.
+
+---
+
+## Prompt 72 — Re-check of the proposed documentation (2026-10-19, Claude Code)
+
+*Sent at about 17:33 UTC.*
+
+**Prompt (verbatim, from the session record):**
+
+> Review the proposed README.md, SUBMISSION.md, and PROMPTS.md files and their diffs again before I apply them.
+> Do not copy files into the repository, edit the working tree, or run any Git-changing commands.
+> Specifically:
+>
+> 1. Fix merged words, missing spaces, malformed Markdown bullets, inconsistent line breaks, and encoding problems in the proposed files.
+> 2. Verify all current commit hashes and CI run references against the rewritten remote main history.
+> 3. Recheck the README prompt count against the actual prompt-log entries.
+> 4. Keep the Git-hygiene self-assessment at 2 unless the assignment rubric clearly supports a higher score; explain the reasoning.
+> 5. Verify that the milestone table contains exactly seven rows and all cited milestone hashes exist in main's history.
+> 6. Preserve accurate disclosures about the history rewrite, test results, deployment, and unverified production edge cases. Do not invent claims.
+> 7. Compare the proposed files with the existing documents to ensure no required content was accidentally removed.
+>
+> Return the corrected files and a concise summary of the changes. Keep everything in the scratch folder outside the repository. Stop and wait for my approval.
+
+**What the assistant did:**
+
+- **Formatting.** The proposed files were checked line by line against the working-tree originals for merged words, missing spaces, doubled spaces, malformed bullets and tables, line endings and encoding (all three are UTF-8 with LF line endings and no byte-order mark). The one structural defect found was the table of original and current hashes, which was nested inside a bullet; it is now a table of its own with a blank line on each side.
+- **Facts.** The current hashes, the seven milestone hashes and the CI runs cited were checked again against the rewritten `main`; the prompt count in the README was recomputed from the entries (40 further prompts, 35 to 72, including 57a and 59a); and the proposed files were compared with the existing ones to confirm that no required content was removed.
+- **Git hygiene.** The proposed self-score of 3 was withdrawn and the score kept at 2, with a row that says the subjects follow `type(scope): [Mx]` only after the rewrite, with one commit per milestone and M5 amended twice.
+- **Changes.** Only files in a folder outside the repository were changed; nothing was copied into the repository, and no Git command that changes anything was run.
 
 **Outcome:** Pending review.
