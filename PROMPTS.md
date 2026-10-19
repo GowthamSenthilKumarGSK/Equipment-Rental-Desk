@@ -63,7 +63,10 @@ Rules for this file:
 | 51  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: nav wrapping, axis ticks and wording fixed with tests; 267 frontend tests, lint, type-check, format and build passed |
 | 52  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: null previous conversion rate explained in words; tests and config simplified; 269 frontend tests, lint, type-check, format and build passed |
 | 53  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: three documents updated and measured; the M6 metadata and `coverage.txt` it left open were completed in prompt 54 |
-| 54  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Pending review: M6 date and hash filled from Git history, `coverage.txt` regenerated from a 1285-test run, entry 53 closed; uncommitted |
+| 54  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: M6 date and hash filled from Git history, `coverage.txt` regenerated from a 1285-test run, entry 53 closed; committed by the owner in `66d3637` |
+| 55  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: CI failure traced to a wrong assumption in one test (PostgreSQL folds `É` in `lower()`, SQLite does not); test assertions corrected, application unchanged; 1285 backend tests passed on SQLite; CI re-run not seen |
+| 56  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: final verification (backend 1285 and frontend 269 tests, coverage, Ruff, Prettier, ESLint, TypeScript, build all passed); stale documentation corrected; stopped for the owner's approval, given in prompt 57 |
+| 57  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: the owner's approval to commit; one commit of four files made (README, PROMPTS, SUBMISSION and the corrected test); not pushed |
 
 ---
 
@@ -1594,5 +1597,64 @@ Business-rule delegation, status codes and error mapping for the tested inputs, 
 - **Other checks (all passed).** `ruff check .` and `ruff format --check .` (123 files); frontend `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test` (269 tests in 16 files) and `npm run build`.
 - **Review of the changes.** 15 modified tracked files and 24 untracked entries (one of them the new `frontend/src/dashboard/` folder): the tracked code diffs are additive apart from one import line, the nav test's expected list and the vitest `css` option; a pattern scan of the modified and new files found no secrets (only prose in the documents and the documented `rental:rental` local defaults); no scratch file is in the repository (the scripts and the prompt extract used for these documents are outside it); `.env` and `frontend/.env` are ignored and untouched. The README's numbered headings are identical to `HEAD`'s in text and order. `SUBMISSION.md` still has sections A to G, five sentences in A, seven milestone rows, five next steps and 11 rubric rows, and measures 1.90 pages at 10.5 pt with 18 mm margins, 1.68 at 10 pt with 15 mm margins (2 printed pages each) and 2.07 at 11 pt with 20 mm margins (3 pages), with the same calibrated rendering as in prompt 53.
 - **Not claimed anywhere:** PostgreSQL validation of the analytics code, CI results for it, or deployment of it. No Git command that changes anything was run, and no application code or seed data was changed.
+
+**Outcome:** Used. Committed by the owner in `66d3637`.
+
+---
+
+## Prompt 55 — Investigate and fix the CI failure in the utilization category test (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Investigate the CI failure:
+> `tests/api/test_analytics_utilization_api.py::test_uppercase_non_ascii_letters_group_the_way_the_database_folds_them_like_the_items_filter`
+>
+> Inspect the full traceback and the CI backend workflow/database configuration. Determine why this test fails in CI but passed locally. Make the smallest correct fix and add or adjust a regression test if needed. Do not weaken the test merely to make CI green. Run the targeted test, full backend suite, and Ruff. Do not run Git-changing commands, commit, push, tag, or touch `main`/`v1.0`. Report the root cause and exact results.
+
+**What the assistant did:**
+
+- **What could and could not be read.** The CI log needs a GitHub login and the `gh` tool is not installed, so the traceback was not read. The workflow (`.github/workflows/ci.yml`) was read: the backend job runs the suite on SQLite and then on `postgres:16-alpine`.
+- **Root cause.** The test looked for the group named `école` among the by-category rows. SQLite's `lower()` folds ASCII letters only, so `École`, `ÉCOLE` and `école` make two groups there, one named `école`. Where the database folds the accented capital too (PostgreSQL in a UTF-8 locale), they are one group of three, named after its first spelling in string order, `ÉCOLE`, so no group is named `école` and the lookup raised `StopIteration`. It was reproduced by running the test on SQLite with a scratch plugin (outside the repository) that makes `lower()` fold Unicode: `StopIteration` at the lookup line. The application was behaving as designed.
+- **Fix, test only.** The test now asserts that the group sizes are exactly `[3]` or `[1, 2]` and that the number of items `GET /items?category=école` returns is one of those sizes. It was not weakened: replacing the database's `lower()` with Python's in the service makes it fail on plain SQLite (`assert 1 in [3]`), and the test that pins SQLite's exact two-group split is untouched.
+- **Results (SQLite).** The targeted test passed on plain SQLite and under the Unicode-folding plugin; the other 313 analytics API tests passed under the plugin (the SQLite-only test fails there, as expected, and is skipped on PostgreSQL); the full backend suite gave 1285 passed in 214.83 s with 99% coverage; Ruff check and format check passed.
+- **Not shown.** PostgreSQL itself was not available, and no CI run of the corrected test had been seen. No Git command that changes anything was run.
+
+**Outcome:** Used. Re-verified in prompt 56; the correction is uncommitted until the owner commits it.
+
+---
+
+## Prompt 56 — Final verification of the branch (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Perform a final verification of the current branch. Investigate and fix the known CI test failure without weakening tests. Run the full backend and frontend test suites, coverage, linting, type checking and production build. Review the changes for correctness, secrets, unrelated files and documentation accuracy.
+>
+> If any required check fails, do not commit; report the failure. If all checks pass, show me the final Git status, diff summary, test results and proposed commit details, then wait for my approval before committing.
+>
+> Do not push, merge, tag, rewrite history, or modify `main` or `v1.0`. Preserve the required AI disclosure and audit trail.
+
+**What the assistant did:**
+
+- **Git state (read-only commands).** `HEAD` is `66d3637` ("add rental analytics dashboard with utilization and demand reports", the owner's commit of 2026-10-19 10:53 IST, 52 files), `origin/feature/analytics-dashboard` is at the same commit, and `main` and `v1.0` are still at `3f4aa66`. The only uncommitted change at the start was the corrected test.
+- **Checks, all passed.** Backend: `pytest -p no:cacheprovider` gave 1285 passed, 1 warning in 130.35 s (slowest test 2.3 s) with branch coverage 2532 statements, 10 missed, 282 branches, 11 partly covered, 99%; `backend/coverage.txt` still matches fresh reports from that run exactly; `ruff check .` and `ruff format --check .` (123 files). Frontend: `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test` (269 tests in 16 files) and `npm run build`.
+- **Review.** The diff against `main` is 52 files, all in the expected areas (backend `app` and `tests`, frontend `src` plus the `vite.config.ts` test option, the three documents and `coverage.txt`); no untracked, binary or scratch files; no secret-like strings in the added code or documents.
+- **Documentation corrected.** The README and `SUBMISSION.md` still said the analytics work was uncommitted and that CI had not run it. They now say it is committed as `66d3637` and pushed but not merged or deployed, that CI ran it and one analytics test was reported failing on PostgreSQL (cause: the test, since corrected; no CI re-run seen by me), and that no other CI result for the branch has been seen. The AI disclosure now counts 22 further prompts (35 to 56). Entry 54 was closed and entries 55 and 56 added; nothing earlier was changed.
+- **Stopped for approval.** The assistant made no commit in this prompt: it ended with the status, diff summary, results and a question, to wait for the owner's approval, which came in prompt 57. No push, merge, tag or history change; `main` and `v1.0` untouched.
+
+**Outcome:** Used. Approved in prompt 57.
+
+---
+
+## Prompt 57 — Approval to commit (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Yes: make the single commit as proposed.
+
+**What the assistant did:**
+
+- **Approval.** This answered the question that ended prompt 56, whose recap and options (one commit, or a test commit and a documentation commit) were shown in the app's next-step box; the full commit message was not written out in the reply, so the message used was the assistant's own wording of the change.
+- **Before committing.** This entry and the matching change to the AI disclosure in `README.md` section 12 were written, because from here on the assistant ran two Git commands that change the repository. The commit that contains them cannot name its own hash, so the hash is not recorded in this file.
+- **The commit.** `git add` with exactly four named files (`README.md`, `PROMPTS.md`, `SUBMISSION.md`, `backend/tests/api/test_analytics_utilization_api.py`) and one `git commit` on the branch `feature/analytics-dashboard`. No `Co-Authored-By` trailer was added, following the owner's earlier instruction (prompt 25); the AI assistance is recorded in `README.md` section 12 and in this log. No push, merge, tag, amend, reset or branch change; `main` and `v1.0` were not touched.
 
 **Outcome:** Pending review.

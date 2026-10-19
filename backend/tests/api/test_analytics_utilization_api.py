@@ -491,13 +491,18 @@ def test_uppercase_non_ascii_letters_group_the_way_the_database_folds_them_like_
         new_item(session_factory, name=f"Item {number}", category=category)
 
     groups = utilization(api, days=1)["by_category"]
-    lowercase = next(g for g in groups if g["category"] == "école")
+    sizes = sorted(g["items"] for g in groups)
 
-    # Whatever the database folds, the group of the lower-case spelling holds exactly the items
-    # `GET /items?category=école` returns: the dashboard never groups differently from the filter.
+    # How many items share a group depends on the database's lower(): SQLite folds ASCII letters
+    # only, so "école" is alone (groups of 1 and 2); PostgreSQL's UTF-8 locale folds the accented
+    # capital too, so all three are one group (3). Nothing else is acceptable. The name of a group
+    # is its first spelling in string order, so it is "ÉCOLE" when the three are merged.
+    assert sizes in ([3], [1, 2])
+    # Whichever it is, the items `GET /items?category=école` returns (those whose lower-cased
+    # category is "école") are exactly one group: the dashboard never groups differently from the
+    # filter.
     found = api.get("/items?category=école&limit=50", at=NOW).json()
-    assert lowercase["items"] == found["total"]
-    assert sum(g["items"] for g in groups) == 3
+    assert found["total"] in sizes
 
 
 def test_on_sqlite_the_ascii_only_fold_makes_two_groups_just_like_the_items_filter(
