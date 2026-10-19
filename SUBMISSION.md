@@ -4,7 +4,7 @@
 
 ## A. What I built
 
-Equipment Rental Desk is a tool-library system (FastAPI, SQLAlchemy and Alembic on PostgreSQL, React/TypeScript UI) that enforces every Problem 1 rule in the backend. All Core features are complete (member and item CRUD, rental flows, payments, overdue list, statement, UI views); beyond them I built a read-only analytics dashboard (six `GET /analytics/*` endpoints and a `/dashboard` page, `66d3637`) and then redesigned every UI page, on the unmerged, undeployed branch `feature/analytics-dashboard` (redesign uncommitted when written), not checked against the Stretch list. Time rules can be tried with the `X-Test-Clock` header (on the live API, not in the hosted UI). It runs on free tiers (read-only checks on 18 October 2026 confirmed health, data, docs, CORS). My local SQLite run now passes 1285 backend tests at 99% coverage (`backend/coverage.txt`), and GitHub Actions [run 39142792206](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39142792206) on `182232b` (before the analytics work) passed all three jobs (backend with PostgreSQL pytest, frontend, container), but PostgreSQL row locking under real contention is reasoned, not proven, and CI reported one failing analytics test on PostgreSQL (a test assumption, since corrected; not re-run).
+Equipment Rental Desk is a tool-library system (FastAPI, SQLAlchemy and Alembic on PostgreSQL, React/TypeScript UI) that enforces every Problem 1 rule in the backend. All Core features are complete (member and item CRUD, rental flows, payments, overdue list, statement, UI views); beyond them I built a read-only analytics dashboard (six `GET /analytics/*` endpoints and a `/dashboard` page) and then redesigned every UI page; both are merged to `main` (`4001ced`) and live (`v1.0` marks M6, before them), not checked against the Stretch list. Time rules can be tried with the `X-Test-Clock` header (on the live API, not in the hosted UI). It runs on free tiers; read-only checks on 18 and 19 October 2026 confirmed health, data, docs, CORS and all six analytics endpoints, but I ran no state-changing case on the live instance. Locally 1285 backend tests pass at 99% coverage (`backend/coverage.txt`), and GitHub Actions [run 39233835275](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39233835275) on `4001ced` passed all three jobs (backend with PostgreSQL pytest, frontend, container), but PostgreSQL row locking under real contention is reasoned, not proven (an earlier PostgreSQL failure of one analytics test was a test assumption, fixed in `4f98780`).
 
 ## B. Three design decisions
 
@@ -44,7 +44,7 @@ One error body, `{"error": {"code", "message", "request_id", "details"}}`; the r
 1. Prove the row locks on PostgreSQL: a contention test that fails when a lock is removed.
 2. Close the two-instance start-up race with an advisory lock, tested on PostgreSQL.
 3. Add authentication, or a secret for `X-Test-Clock`: today anyone can send it.
-4. Deploy the dashboard and redesign, run the analytics tests on PostgreSQL, check hosted logs, run an accessibility pass.
+4. Run the state-changing edge cases on the live instance, check hosted logs and its database engine, run an accessibility pass.
 5. Smaller gaps: SQL status filter, cursor paging, loan member names, UI edit/delete.
 
 ## G. Self-assessment
@@ -58,7 +58,7 @@ One error body, `{"error": {"code", "message", "request_id", "details"}}`; the r
 | Data modelling and persistence (9) | 4 | CHECKs, foreign keys, partial unique index, tested migration (also run in CI on PostgreSQL), seed. |
 | API design (8) | 4 | Resource paths, correct status codes, filters, paging, OpenAPI; offset paging can shift. |
 | UI usability (6) | 4 | Core flows, valid actions only, confirmations, loading, empty and error states; checked by eye only, no accessibility audit. |
-| Testing (7) | 4 | 1285 backend tests, 99% coverage (local SQLite); 315 frontend tests, lint, type-check, build (19 Oct); CI run 39142792206 on `182232b` passed, incl. PostgreSQL pytest. |
-| Deployment and operability (5) | 3 | Dockerfiles, Compose, `render.yaml`, `vercel.json` committed; live API seeded and refuses a foreign origin; container CI job passed. |
+| Testing (7) | 4 | 1285 backend tests, 99% coverage (local SQLite); 315 frontend tests, lint, type-check, build (19 Oct); CI run 39233835275 on `4001ced` (`main`) passed, incl. PostgreSQL pytest. |
+| Deployment and operability (5) | 3 | Dockerfiles, Compose, `render.yaml`, `vercel.json` committed; live API seeded, serves the merged code and refuses a foreign origin; container CI job passed; no write case tried live. |
 | Git hygiene (4) | 2 | Milestone-tagged commits, no secrets, `v1.0` on the M6 commit; but one commit per milestone, no `type(scope):`, M5 amended twice. |
 | Documentation (4) | 4 | README follows the required structure with honest limitations; `PROMPTS.md` logs prompts. |
