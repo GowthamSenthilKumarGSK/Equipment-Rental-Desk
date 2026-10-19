@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { SelectField } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { DemandView } from "../dashboard/DemandSection";
 import { MaintenanceView } from "../dashboard/MaintenanceSection";
 import { OverdueView } from "../dashboard/OverdueSection";
@@ -45,56 +46,69 @@ export default function DashboardPage() {
 
   return (
     <>
-      <h1>Dashboard</h1>
-      <p className="muted">
-        Figures come straight from the rental records. Money is in rupees (₹) and dates are in
-        Indian Standard Time (IST). Every period runs up to now, so today counts as a part-day.
-      </p>
+      <PageHeader
+        title="Dashboard"
+        description="Figures come straight from the rental records. Money is in rupees (₹) and dates are in Indian Standard Time (IST). Every period runs up to now, so today counts as a part-day."
+      />
 
-      <form className="dashboard-controls" onSubmit={(event) => event.preventDefault()}>
-        <SelectField
-          label="Period"
-          value={String(days)}
-          onChange={(event) => change("days", event.target.value)}
-        >
-          {PERIOD_CHOICES.map((choice) => (
-            <option key={choice} value={choice}>
-              Last {choice} days
-            </option>
-          ))}
-        </SelectField>
-        <SelectField
-          label="Group charts by"
-          value={bucket}
-          onChange={(event) => change("bucket", event.target.value)}
-        >
-          <option value="day">Day</option>
-          <option value="week">Week (Monday to Sunday)</option>
-        </SelectField>
-      </form>
+      <div className="controls-bar">
+        <form className="dashboard-controls" onSubmit={(event) => event.preventDefault()}>
+          <SelectField
+            label="Period"
+            value={String(days)}
+            onChange={(event) => change("days", event.target.value)}
+          >
+            {PERIOD_CHOICES.map((choice) => (
+              <option key={choice} value={choice}>
+                Last {choice} days
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Group charts by"
+            value={bucket}
+            onChange={(event) => change("bucket", event.target.value)}
+          >
+            <option value="day">Day</option>
+            <option value="week">Week (Monday to Sunday)</option>
+          </SelectField>
+        </form>
 
-      <nav className="jump" aria-label="Dashboard sections">
-        <a href="#summary-heading">Summary</a>
-        <a href="#utilization-heading">Utilization</a>
-        <a href="#demand-heading">Demand</a>
-        <a href="#overdue-heading">Overdue</a>
-        <a href="#payments-heading">Payments</a>
-        <a href="#maintenance-heading">Maintenance</a>
-      </nav>
+        <nav className="jump" aria-label="Dashboard sections">
+          <a href="#summary-heading">Summary</a>
+          <a href="#utilization-heading">Utilization</a>
+          <a href="#demand-heading">Demand</a>
+          <a href="#overdue-heading">Overdue</a>
+          <a href="#payments-heading">Payments</a>
+          <a href="#maintenance-heading">Maintenance</a>
+        </nav>
+      </div>
 
-      <ReportSection id="summary" title="Summary" what="the summary" state={summary}>
+      <ReportSection id="summary" title="Summary" what="the summary" state={summary} icon="chart">
         {(data) => <SummaryView data={data} />}
       </ReportSection>
-      <ReportSection id="utilization" title="Utilization" what="utilization" state={utilization}>
+      <ReportSection
+        id="utilization"
+        title="Utilization"
+        what="utilization"
+        state={utilization}
+        icon="box"
+      >
         {(data) => <UtilizationView data={data} />}
       </ReportSection>
-      <ReportSection id="demand" title="Demand" what="demand" state={demand}>
+      <ReportSection id="demand" title="Demand" what="demand" state={demand} icon="funnel">
         {(data) => <DemandView data={data} />}
       </ReportSection>
-      <ReportSection id="overdue" title="Overdue loans" what="overdue loans" state={overdue}>
+      <ReportSection
+        id="overdue"
+        title="Overdue loans"
+        what="overdue loans"
+        state={overdue}
+        icon="clock"
+      >
         {(data) => <OverdueView data={data} />}
       </ReportSection>
-      <ReportSection id="payments" title="Payments" what="payments" state={payments}>
+      <ReportSection id="payments" title="Payments" what="payments" state={payments} icon="rupee">
         {(data) => <PaymentsView data={data} />}
       </ReportSection>
       <ReportSection
@@ -102,6 +116,7 @@ export default function DashboardPage() {
         title="Maintenance snapshot"
         what="maintenance"
         state={maintenance}
+        icon="wrench"
       >
         {(data) => <MaintenanceView data={data} />}
       </ReportSection>

@@ -3,7 +3,10 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import { AddMemberForm } from "../components/AddMemberForm";
 import { SelectField, TextField } from "../components/Field";
+import { Avatar } from "../components/Avatar";
+import { EmptyState } from "../components/EmptyState";
 import { ErrorNotice, Loading } from "../components/Notice";
+import { PageHeader } from "../components/PageHeader";
 import { Pager, PastTheEnd } from "../components/Pager";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatDate } from "../format";
@@ -61,8 +64,12 @@ export default function MembersPage() {
 
   return (
     <>
-      <h1>Members</h1>
-      <div className="toolbar" role="group" aria-label="Filter members">
+      <PageHeader
+        title="Members"
+        description="Find a member, check what they owe and what they have out, and see whether they can borrow."
+      />
+      <AddMemberForm onCreated={members.reload} />
+      <div className="toolbar toolbar--two" role="group" aria-label="Filter members">
         <SearchBox key={q} initial={q} onSearch={(text) => change({ q: text })} />
         <SelectField
           label="Status"
@@ -76,7 +83,7 @@ export default function MembersPage() {
       </div>
 
       {members.error && <ErrorNotice error={members.error} onRetry={members.reload} />}
-      {members.loading && !members.data && <Loading what="members" />}
+      {members.loading && !members.data && <Loading what="members" shape="list" />}
       {pastEnd && members.data && (
         <PastTheEnd
           total={members.data.total}
@@ -86,20 +93,25 @@ export default function MembersPage() {
         />
       )}
       {members.data && members.data.results.length === 0 && !pastEnd && (
-        <div className="empty">
-          <p>{filtered ? "No members match these filters." : "There are no members yet."}</p>
-          {filtered && (
-            <Link to="/members" className="button button--secondary">
-              Clear filters
-            </Link>
-          )}
-        </div>
+        <EmptyState
+          icon="users"
+          action={
+            filtered && (
+              <Link to="/members" className="button button--secondary">
+                Clear filters
+              </Link>
+            )
+          }
+        >
+          {filtered ? "No members match these filters." : "There are no members yet."}
+        </EmptyState>
       )}
       {members.data && members.data.results.length > 0 && (
         <ul className="cards" aria-label="Members">
           {members.data.results.map((member) => (
-            <li key={member.id} className="card">
-              <div className="card__main">
+            <li key={member.id} className="row row--person">
+              <Avatar name={member.name} />
+              <div className="row__main">
                 <h2>
                   <Link to={`/members/${member.id}`}>{member.name}</Link>
                 </h2>
@@ -121,8 +133,6 @@ export default function MembersPage() {
           onOffsetChange={(next) => change({ page: String(next / PAGE_SIZE + 1) })}
         />
       )}
-
-      <AddMemberForm onCreated={members.reload} />
     </>
   );
 }
