@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.api.errors import ApiError
 from app.clock import Clock, FixedClock, SystemClock
 from app.config import Settings, get_settings
+from app.services.analytics import AnalyticsService
 from app.services.items import ItemService
 from app.services.loans import LoanService
 from app.services.members import MemberService
@@ -98,9 +99,14 @@ def get_member_service(factory: SessionFactoryDep, clock: ClockDep) -> MemberSer
     return MemberService(factory, clock)
 
 
+def get_analytics_service(factory: SessionFactoryDep, clock: ClockDep) -> AnalyticsService:
+    return AnalyticsService(factory, clock)
+
+
 LoanServiceDep = Annotated[LoanService, Depends(get_loan_service)]
 ItemServiceDep = Annotated[ItemService, Depends(get_item_service)]
 MemberServiceDep = Annotated[MemberService, Depends(get_member_service)]
+AnalyticsServiceDep = Annotated[AnalyticsService, Depends(get_analytics_service)]
 
 
 @dataclass(frozen=True)

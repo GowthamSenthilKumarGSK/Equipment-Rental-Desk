@@ -44,6 +44,29 @@ Rules for this file:
 | 32  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: this log extended with entries 25-32 and dated notes on prompt 24; uncommitted |
 | 33  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Used: final read-only consistency audit of the four files; figures, hashes, CI claims and structure consistent; found an inaccurate Git-history claim in the AI disclosure and an unlogged prompt |
 | 34  | 2026-10-18 | M6        | Claude Code (Sonnet 5.5)  | Pending review: AI-disclosure history corrected in `README.md` and prompt 31; entries 33 and 34 added; uncommitted |
+| 35  | 2026-10-18 | Analytics | Claude Code (Sonnet 5.5)  | Used: read-only plan returned; nothing edited; followed in phases by prompts 37, 44, 47 and 49 |
+| 36  | 2026-10-18 | Analytics | Claude Code (Sonnet 5.5)  | Used: stopped on a branch question, nothing edited; answered by the user, then re-sent as prompt 37 |
+| 37  | 2026-10-18 | Analytics | Claude Code (Sonnet 5.5)  | Used: Phase 1 backend built, 1021 backend tests passed on SQLite; reviewed in prompt 38 |
+| 38  | 2026-10-18 | Analytics | Claude Code (Sonnet 5.5)  | Used: read-only review; no verified functional bug; seven risks and limitations reported; fixed in prompt 39 |
+| 39  | 2026-10-18 | Analytics | Claude Code (Sonnet 5.5)  | Used: four review findings fixed with regression tests; 1089 backend tests passed on SQLite; reviewed in prompt 40 |
+| 40  | 2026-10-18 | Analytics | Claude Code (Sonnet 5.5)  | Used: read-only review; one wrong docstring, one weak test oracle and two test gaps found; fixed in prompt 41 |
+| 41  | 2026-10-18 | Analytics | Claude Code (Sonnet 5.5)  | Used: docstring corrected, oracle fixed, regression tests added; 1095 backend tests passed on SQLite |
+| 42  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: read-only; one wording nit and one weak assertion reported; tests shown not to be vacuous |
+| 43  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: one docstring edited; 508 analytics tests and Ruff passed |
+| 44  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: `/analytics/utilization` and `/analytics/demand` built; 1239 backend tests passed on SQLite; reviewed in prompt 45 |
+| 45  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: read-only review; no functional bug; category ordering, a category-folding risk and test gaps reported; fixed in prompt 46 |
+| 46  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: ordering, category grouping and wording fixed, tests added; 1253 backend tests passed on SQLite; one portability limit reported |
+| 47  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: `/analytics/maintenance` built with 32 tests; 1285 backend tests passed on SQLite (that run took 30 minutes 41 seconds) |
+| 48  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: read-only investigation; no slow test or fixture; machine contention likely but not proven |
+| 49  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: `/dashboard` built on the six endpoints; 234 frontend tests, lint, type-check and build passed; viewed in a browser |
+| 50  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: read-only review; fields verified against the real API; header overflow and two display bugs found; fixed in prompt 51 |
+| 51  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: nav wrapping, axis ticks and wording fixed with tests; 267 frontend tests, lint, type-check, format and build passed |
+| 52  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: null previous conversion rate explained in words; tests and config simplified; 269 frontend tests, lint, type-check, format and build passed |
+| 53  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: three documents updated and measured; the M6 metadata and `coverage.txt` it left open were completed in prompt 54 |
+| 54  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: M6 date and hash filled from Git history, `coverage.txt` regenerated from a 1285-test run, entry 53 closed; committed by the owner in `66d3637` |
+| 55  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: CI failure traced to a wrong assumption in one test (PostgreSQL folds `É` in `lower()`, SQLite does not); test assertions corrected, application unchanged; 1285 backend tests passed on SQLite; CI re-run not seen |
+| 56  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: final verification (backend 1285 and frontend 269 tests, coverage, Ruff, Prettier, ESLint, TypeScript, build all passed); stale documentation corrected; stopped for the owner's approval, given in prompt 57 |
+| 57  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: the owner's approval to commit; one commit of four files made (README, PROMPTS, SUBMISSION and the corrected test); not pushed |
 
 ---
 
@@ -1156,5 +1179,482 @@ Business-rule delegation, status codes and error mapping for the tested inputs, 
 - **Prompt 31 entry.** The matching clause was corrected in place, and it now records that it first said "only the Git commands explicitly requested", which was inaccurate. The rest of the entry is unchanged.
 - **This log.** Entries 33 and 34 were appended (the second so that this prompt is also logged), table rows 33 and 34 were added, and rows and outcomes for prompt 32 were closed from "Pending review". Earlier history is otherwise intact.
 - **Still open.** The M6 commit, and with it the M6 date and hash in `SUBMISSION.md`; the `v1.0` tag; unread CI job logs (no test counts); PostgreSQL row-lock correctness under real contention (unproven); the hosted edge-case run-through; the Members and Overdue pages (reported working, not re-checked). Any later prompts need their own entries.
+
+**Outcome:** Pending review.
+
+---
+
+## Prompt 35 — Plan an analytics dashboard (read-only) (2026-10-18, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Inspect the Equipment Rental Desk codebase and plan an advanced analytics dashboard using the existing stack and architecture. Focus on executive KPIs, equipment utilization and demand, overdue aging, payments and maintenance. Use real database data and backend aggregation endpoints; do not hard-code metrics or add an ML model yet. Identify the relevant files, existing data available for each metric, proposed API endpoints, UI components and tests. Do not edit files or run Git-changing commands. Return a concise implementation plan, then stop.
+
+**What the assistant did:**
+
+- **Read-only.** No file was edited and no Git command that changes anything was run. The reply was a concise implementation plan: the relevant files, the existing data behind each metric, proposed endpoints, UI components and tests.
+- **What came of it.** The plan was built in phases (prompts 37 to 47 for the six endpoints, 49 to 52 for the page); the limits it had to respect, above all that the database keeps no maintenance history, are documented in `README.md` sections 8 and 11.
+
+**Outcome:** Used. Phase 1 was requested next (prompts 36 and 37).
+
+---
+
+## Prompt 36 — Phase 1 request, first attempt (branch question) (2026-10-18, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Implement Phase 1 of the advanced analytics dashboard on the existing feature branch. Do not change Git state or touch `main`/`v1.0`.
+>
+> Add pure analytics domain functions, portable repository queries, a read-only service, response schemas and API endpoints for `/analytics/summary`, `/analytics/overdue-aging` and `/analytics/payments`. Follow existing project patterns, use the injected clock and IST reporting buckets, calculate money in integer paise, and use effective loan/item statuses without mutating data.
+>
+> Add thorough backend tests for empty data, date boundaries, `X-Test-Clock`, fee calculations, consistency with existing endpoints and read-only behavior. Do not build the frontend or change existing seed data yet. Run relevant tests and report files changed, results and remaining limitations. Do not run Git-changing commands.
+
+**What the assistant did:**
+
+- **Nothing was built.** The prompt asked for work on "the existing feature branch" without changing Git state. The assistant asked the user how to proceed on the branch question instead of guessing. The user's answer was "I'll switch branch first (Recommended)".
+- **No file was edited**, and no Git command that changes anything was run.
+
+**Outcome:** Used. Superseded by prompt 37, which names the branch.
+
+---
+
+## Prompt 37 — Implement Phase 1 (summary, overdue aging, payments) (2026-10-18, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Implement Phase 1 of the advanced analytics dashboard on the existing `feature/analytics-dashboard` branch. First verify the current branch and clean working tree; do not run any Git-changing commands or touch `main` or `v1.0`.
+> Implement:
+>
+> * Pure analytics domain functions for reporting windows, IST date buckets, interval clipping, ratios and overdue aging.
+> * Portable repository queries, a read-only analytics service, response schemas and API wiring.
+> * `GET /analytics/summary`, `/analytics/overdue-aging` and `/analytics/payments`.
+> * Thorough backend tests covering empty data, boundaries, `X-Test-Clock`, fee calculations, consistency with existing endpoints and read-only behavior.
+>
+> Use real database data, integer paise for money, and effective loan/item statuses. Analytics requests must never mutate data or expire reservations. Follow existing project patterns and keep SQLite/PostgreSQL compatibility.
+> Run relevant tests, Ruff and the full backend suite if feasible. Report files changed, test results and limitations. Do not build the frontend or change seed data yet.
+
+**What the assistant did:**
+
+- **First checks.** The branch (`feature/analytics-dashboard`) and a clean working tree were confirmed with read-only Git commands; `main` and `v1.0` were not touched.
+- **Built.** Pure rules in `app/domain/analytics.py` (IST windows, day and week buckets, interval clipping, half-up percentages, aging bands); plain SELECTs in `app/repositories/analytics.py`; a read-only service (`app/services/analytics.py` and `analytics_views.py`); response schemas; `app/api/analytics.py`, wired through `deps.py` and `main.py`; `GET /analytics/summary`, `/overdue-aging` and `/payments`.
+- **Tests.** 100 domain tests (windows, buckets, math) and API tests for empty data, validation, `X-Test-Clock`, exact boundaries, fee calculations, agreement with the existing endpoints, read-only behaviour (a before-and-after snapshot of every table) and a constant statement count. The session's context was compacted part-way through this prompt and continued from a written summary.
+- **Results (local, SQLite only).** 1021 backend tests passed with 99% coverage and the new modules at 100%; Ruff clean. Seven deliberate breakages (for example `<` to `<=` at the overdue edge, a period edge made inclusive) were all caught. Limitations were reported, above all that nothing was run on PostgreSQL.
+
+**Outcome:** Used. Reviewed in prompt 38.
+
+---
+
+## Prompt 38 — Review Phase 1 (read-only) (2026-10-18, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Review the Phase 1 analytics implementation and tests without editing files or running Git-changing commands.
+> Focus on correctness risks:
+>
+> * Window boundaries, IST bucketing and `X-Test-Clock`.
+> * Overdue fee and aging calculations, including caps and exact boundaries.
+> * Whether every endpoint is truly read-only and avoids N+1 queries.
+> * Whether summary and payment totals are clearly defined and consistent.
+> * SQLite/PostgreSQL compatibility and multi-query consistency.
+> * API response schemas, validation and errors.
+>
+> Run only targeted checks if needed. Report concrete bugs or risks with file/line references; distinguish verified bugs from design limitations. Do not start Phase 2.
+
+**What the assistant did:**
+
+- **Read-only.** One scratch script on a throwaway SQLite database (outside the repository) was run; no file was edited.
+- **Findings.** No verified functional bug. Verified: the ledger and balances ignored the "now" cut-off that the period figures used, so a payment dated after "now" counted in `ledger.collected_paise`; a clock earlier than the data shows current rows; every report takes the SQLite write lock. Reasoned, not run: no snapshot isolation on PostgreSQL. Design limits: today is compared as a part-day against a full previous period, `fleet.overdue` and `loans.overdue` can differ, `outstanding_paise` was net of credits, unbounded reads.
+
+**Outcome:** Used. Acted on in prompt 39.
+
+---
+
+## Prompt 39 — Phase 1 correctness pass (four fixes) (2026-10-18, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Make a focused Phase 1 correctness pass on the existing `feature/analytics-dashboard` branch. Do not run Git-changing commands or touch `main`/`v1.0`.
+> Fix these issues only:
+>
+> 1. Make analytics ledger/payment totals consistent about future-dated payments. Prefer excluding rows after the injected `now` from time-sensitive totals, and add regression tests.
+> 2. Correct or explicitly flag partial-period comparisons so today's incomplete data is not misleadingly compared with a complete previous period. Document partial weekly buckets in the response schema or API docs.
+> 3. Clarify the distinction between fleet-overdue items and overdue loans in response descriptions and tests.
+> 4. Clarify whether `outstanding_paise` is a net balance or a non-negative receivable; keep `top_balances` consistent with that definition.
+>
+> Add targeted tests for each correction. Preserve read-only behavior and existing endpoint conventions. Do not implement Phase 2 or change seed data. Run relevant tests and Ruff, then report the files changed and results. Do not commit.
+
+**What the assistant did:**
+
+- **Fixed.** (1) The ledger and balances now stop at "now". (2) The previous period is compared up to the same elapsed time (`previous_through`), and series buckets carry `covered_from`, `covered_to` and `partial`. (3) The descriptions of fleet-overdue and loan-overdue say what each counts. (4) `outstanding_paise` is now the total of balances above zero and a new `unapplied_credit_paise` holds credits.
+- **Results (SQLite only).** 1089 backend tests passed, 99% coverage, Ruff clean. Seven further deliberate breakages (ledger left uncapped, whole previous period compared, net `outstanding_paise`, partial flag removed) were all caught. Several existing tests had to change because the previous figures are smaller by design.
+
+**Outcome:** Used. Reviewed in prompt 40.
+
+---
+
+## Prompt 40 — Review the Phase 1 fixes (read-only) (2026-10-18, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Review the latest Phase 1 correctness fixes without editing files or running Git-changing commands.
+> Check:
+>
+> * Future-dated fees/payments are consistently excluded until `X-Test-Clock` reaches them.
+> * Previous-period comparisons use the same elapsed duration as the current period, including IST midnight boundaries.
+> * Partial daily/weekly bucket metadata is correct.
+> * `outstanding_paise`, `unapplied_credit_paise`, fees and collections satisfy their documented identity.
+> * Fleet-overdue and loan-overdue descriptions match their actual behavior.
+> * Tests cover regressions and existing endpoint consistency.
+>
+> Run targeted tests only if needed. Report concrete bugs, file/line references and unresolved risks. Do not start Phase 2.
+
+**What the assistant did:**
+
+- **Verified correct.** Future-dated exclusion, the same elapsed duration (including at IST midnight), partial-bucket metadata and the documented identity.
+- **Found.** The schema module's docstring said nothing dated after `as_of` is counted anywhere, which is false for fleet, loan and member totals (shown with a scratch script); a sample-data test still compared `outstanding_paise` with the net balance; no test pinned that `/members/{id}` still counts rows dated after "now", or the behaviour under an earlier clock.
+
+**Outcome:** Used. Fixed in prompt 41.
+
+---
+
+## Prompt 41 — Fix the three Phase 1 findings (2026-10-18, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Fix only these three findings on `feature/analytics-dashboard`:
+>
+> 1. Correct `backend/app/schemas/analytics.py` module docstring: only activity and money metrics exclude records dated after `as_of`; fleet, loan and member counts describe current rows evaluated at `as_of`.
+> 2. In `test_analytics_payments_api.py`, update the outstanding assertion to sum only positive member balances, and assert `unapplied_credit_paise` equals the absolute sum of negative balances.
+> 3. Add regression tests documenting that `/members/{id}` and its statement retain their existing behavior for future-dated rows while analytics excludes them, and that fleet/loan/member counts reflect current rows under a backward `X-Test-Clock`.
+>
+> Run relevant tests, the full backend suite, and Ruff. Do not change production behavior beyond the incorrect docstring if possible. Do not start Phase 2. Do not run any Git-changing commands, commit, push, tag, or modify `main`/`v1.0`. Report changed files, test results, and any remaining risks.
+
+**What the assistant did:**
+
+- **Changed.** Only the docstring in `app/schemas/analytics.py` among the application files; the sample-data test now sums positive balances and checks the credit; three tests pin that the member and statement endpoints keep their behaviour for rows dated after "now" while analytics excludes them, and that counts reflect current rows under an earlier clock.
+- **Results (SQLite only).** 1095 backend tests passed, 99% coverage, Ruff clean.
+
+**Outcome:** Used. Reviewed in prompt 42.
+
+---
+
+## Prompt 42 — Review the latest uncommitted diff only (read-only) (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Review the latest uncommitted Phase 1 diff only. Verify the docstring accurately describes behavior, the outstanding/credit assertions use the correct definitions, and the new clock tests genuinely exercise the stated cases. Check for unrelated changes. Do not edit files or run Git-changing commands. Report any concrete issue briefly.
+
+**What the assistant did:**
+
+- **Findings.** The docstring's "member counts" could be read to include the balance-derived `blocked_*` figures, which do honour the cut-off; the credit assertion on the sample data is `0 == 0` because the seed has no credits (credit coverage is in other tests).
+- **Checked.** Switching off the ledger cut-off for payments or for fees made the new tests fail. No unrelated changes were found.
+
+**Outcome:** Used. Acted on in prompt 43.
+
+---
+
+## Prompt 43 — Docstring wording clarification only (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Make only the docstring wording clarification in `backend/app/schemas/analytics.py`: specify that current-row counts refer to fleet, loan totals, and `members.total`, `members.active`, and `members.suspended`. Clarify that balance-derived blocked/receivables counts still use the `as_of` cutoff. No other edits. Run the relevant schema/analytics tests and Ruff. Do not run Git-changing commands, commit, push, or touch `main`/`v1.0`.
+
+**What the assistant did:**
+
+- **Changed.** The module docstring of `app/schemas/analytics.py` now says that fleet and loan totals and `members.total`, `active` and `suspended` describe current rows, and that the balance-derived blocked, receivables and over-limit counts use the "now" cut-off. Nothing else was edited.
+- **Run.** The 508 analytics API and domain tests and Ruff (not the full suite, since no code changed).
+
+**Outcome:** Used.
+
+---
+
+## Prompt 44 — Implement Phase 2 (utilization and demand) (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Implement Phase 2 on `feature/analytics-dashboard`: utilization and demand analytics only.
+> Add read-only GET endpoints `/analytics/utilization` and `/analytics/demand`, following the existing Phase 1 architecture and response conventions.
+>
+> * Utilization: calculate checked-out item-days divided by total fleet item-days, with clear period/bucket semantics and IST boundaries.
+> * Demand: reservation funnel, category breakdown and top items, using effective statuses and the injected clock.
+> * Use portable queries and backend aggregation. Document that historical maintenance intervals are unavailable; do not invent them.
+> * Add tests for empty data, boundaries, cancelled/expired reservations, maintenance, and consistency with existing endpoints.
+>
+> Run targeted tests, the full backend suite, and Ruff. Do not change existing seed data or frontend yet. Do not run Git-changing commands, commit, push, tag, or modify `main`/`v1.0`. Keep the implementation focused and report changed files, endpoint shapes, test results, and limitations.
+
+**What the assistant did:**
+
+- **Built.** `app/domain/utilization.py` (measured time, time inside a period, bucket windows, reservation outcomes), two repository queries, service methods, schemas and routes. Utilization is checked-out item-days over fleet item-days, measured from IST midnight up to "now" with the previous period measured over the same length; demand is a reservation funnel (checked out, cancelled, hold ran out, still waiting), a category breakdown and the most reserved items. Maintenance history is documented as unavailable and nothing is invented.
+- **Tests.** 44 domain tests for the new rules and API tests for empty data, boundaries, cancelled and expired reservations, maintenance, `X-Test-Clock` and agreement with `/items`; the shared validation, clock, read-only and statement-count tests were extended to cover both endpoints. A bug in the test helper (a cancelled reservation was given a cancellation time an hour in the future) was found and fixed along the way.
+- **Results (SQLite only).** 1239 backend tests passed, 99% coverage, the new code at 100%, Ruff clean. Eleven deliberate breakages: eight caught at once, two equivalent (no observable change), one exposed a missing test (the tie-break of the most reserved items), added afterwards.
+
+**Outcome:** Used. Reviewed in prompt 45.
+
+---
+
+## Prompt 45 — Review Phase 2 (read-only) (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Independently review Phase 2 (`/analytics/utilization` and `/analytics/demand`) for functional bugs. Do not edit files or run Git-changing commands.
+> Focus on:
+>
+> 1. Item-day clipping at IST midnight, `as_of`, returns and future-dated loans; verify numerator/denominator and partial-bucket math.
+> 2. Whether the previous-period comparison covers exactly the same elapsed duration.
+> 3. Demand funnel categories are mutually exclusive and exhaustive at the 48-hour expiry boundary, including cancelled, checked-out and returned reservations.
+> 4. Category totals, conversion rates, tie-breaking, and consistency with existing endpoints.
+> 5. Read-only behavior, query count and any accidental Phase 1 regressions.
+>
+> Run targeted tests only if needed. Report concrete bugs with file/line references, weak tests, and unresolved risks. Do not start Phase 3.
+
+**What the assistant did:**
+
+- **Verified correct.** Clipping at IST midnight and at "now", returns and future-dated loans; the same elapsed duration for the previous period; the funnel outcomes being exclusive and exhaustive at the 48-hour boundary; constant statement counts; read-only behaviour.
+- **Findings.** Category ties were ordered case-sensitively (`Zebra` before `apple`, shown by a scratch script); grouping by Python's `lower()` can differ from the database's; the previous funnel is judged at "now", so its conversion rate has had longer to settle; a few weak tests.
+
+**Outcome:** Used. Fixed in prompt 46.
+
+---
+
+## Prompt 46 — Fix the Phase 2 review findings (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Fix the Phase 2 review findings only on `feature/analytics-dashboard`:
+>
+> * Make category tie-breaking case-insensitive and deterministic in utilization and demand; add mixed-case tests.
+> * Make category normalization consistent with `/items?category=` for non-ASCII labels, with a regression test.
+> * Document that the previous demand funnel is evaluated at `now`, so its conversion rate is not maturity-adjusted against the current funnel.
+> * Clarify `previous_through` wording for half-open utilization intervals.
+> * Add tests for loans starting exactly at and 1µs before `previous_through`, and stored-expired reservations under a backward `X-Test-Clock`.
+>
+> Preserve existing behavior unless a test proves a defect. Run targeted tests, the full backend suite, and Ruff. Do not start Phase 3. Do not run Git-changing commands, commit, push, tag, or touch `main`/`v1.0`. Report any portability limitation you cannot resolve cleanly.
+
+**What the assistant did:**
+
+- **Fixed.** Case-insensitive, deterministic category ordering; categories grouped by the database's own `lower()` (a new `category_keys` query) so they agree with the database; the previous-funnel and `previous_through` wording; tests for a loan starting exactly at `previous_through` and for stored-expired reservations under an earlier clock.
+- **Results (SQLite only).** 1253 backend tests passed, 99% coverage, Ruff clean; six further breakages (Python `lower()` instead of the database's, a case-sensitive tie-break, a previous measured period that is too long, the stored status trusted for expiry) were all caught.
+- **Limit found, not resolved.** The existing `GET /items?category=` filter compares SQLite's ASCII-only lower-cased column with a Python lower-cased parameter, so on SQLite it cannot match a category with an uppercase non-ASCII letter. That existing behaviour was left unchanged and is in the README's known limitations.
+
+**Outcome:** Used.
+
+---
+
+## Prompt 47 — Implement the maintenance snapshot endpoint (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Inspect the existing analytics endpoints and schemas on `feature/analytics-dashboard`. Implement only the remaining maintenance analytics endpoint if it is not already complete.
+>
+> Return a read-only snapshot of current maintenance status and fleet counts, consistent with existing item endpoints. Clearly document that historical maintenance intervals are unavailable; do not infer historical downtime. Add empty-data, consistency, clock, read-only and query-count tests.
+>
+> Run targeted tests, the full backend suite, and Ruff. Do not start frontend work or modify seed data yet. Do not run Git-changing commands, commit, push, tag, or touch `main`/`v1.0`. Report the endpoint shape, changed files, test results, and limitations.
+
+**What the assistant did:**
+
+- **Checked first.** The existing analytics code had no maintenance endpoint, so one was added: a snapshot of the fleet counts (shared with the summary) and the items under maintenance, with their open loan, `history_available: false`, and an explicit statement in the schema and the endpoint description that start and end times are not recorded.
+- **Tests.** 32: empty data, agreement with `/items?status=`, `allowed_actions` and `/loans/overdue`, the exact overdue boundary, the clock, the list cap of 50, read-only behaviour and a constant statement count.
+- **Results (SQLite only).** 1285 backend tests passed, 99% coverage, Ruff clean. Nine deliberate breakages: seven caught at once, two exposed missing tests (category ordering, a reservation on a maintenance item), added and re-run. The full run took 30 minutes 41 seconds, which prompt 48 looked into.
+
+**Outcome:** Used.
+
+---
+
+## Prompt 48 — Why did the full backend suite take 30 minutes? (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Investigate why the full backend suite now takes ~30m versus ~3m previously. Do not edit files or run Git-changing commands. Inspect pytest configuration, fixtures, test counts and slow-test output; use pytest duration reporting if useful. Identify the cause if possible, distinguishing machine contention from a specific slow test or fixture. Do not rerun the full suite unless needed. Report findings and the cheapest safe fix.
+
+**What the assistant did:**
+
+- **No file was edited**; the scratch scripts were outside the repository.
+- **Found.** The pytest configuration and fixtures are cheap (the schema is built once, tables are emptied per test); the slowest single test takes about 2 seconds; the same tests ran noticeably slower than they had an hour earlier; a background run was as fast as a foreground one; raw SQLite commits cost about 6.7 ms and `journal_mode=MEMORY` plus `synchronous=OFF` made them about 55 times cheaper, yet did not speed up the real suite. The laptop was on battery, OneDrive was syncing the project folder and disk write latency was uneven, so contention is the likeliest cause, but that run could not be observed and the cause is unproven.
+- **Suggested, not applied.** Run on mains power, keep the repository and `.venv` out of OneDrive, use `--no-cov` for quick loops and `--durations=20` if it recurs.
+
+**Outcome:** Used. Recorded in the README's section 6.
+
+---
+
+## Prompt 49 — Build the dashboard frontend (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Implement the analytics dashboard frontend on `feature/analytics-dashboard`, using the existing React/TypeScript UI and the six implemented analytics endpoints.
+>
+> Build a responsive dashboard with summary cards, utilization chart, demand funnel/category breakdown, overdue aging, payments and maintenance snapshot. Reuse existing UI patterns and dependencies; handle loading, empty and API-error states. Display currency correctly in INR, label date ranges and partial periods, and clearly disclose that maintenance history is unavailable and utilization has historical-data limitations. Keep charts readable and accessible.
+>
+> Add frontend tests for rendering, API loading/errors, empty data and key metric formatting. Run frontend tests, lint, typecheck and build. Do not change backend behavior or seed data. Do not run Git-changing commands, commit, push, tag, or touch `main`/`v1.0`. Report changed files, tests and any endpoint integration gaps.
+
+**What the assistant did:**
+
+- **Built (no new dependency).** Types and client functions for the six endpoints; `src/pages/DashboardPage.tsx` and `src/dashboard/` (Summary, Utilization, Demand, Overdue, Payments and Maintenance sections, a hand-drawn `ColumnChart` and `BarList`); period and grouping controls kept in the address; a Dashboard link and route; helper functions in `format.ts`; styles. Each report loads on its own with its own error and retry; money is formatted from paise as rupees; every report states its dates, that today is not over and the comparison point; the limitations are always visible.
+- **Tests.** 26 page tests for rendering, request parameters, loading, errors, empty data, labels and disclosures, plus chart and format tests; the existing nav test now expects the Dashboard link.
+- **Checked by eye.** The page was opened in the app's browser pane against a throwaway seeded SQLite backend, at desktop width and at phone width in dark colours. No accessibility checker or screen reader was used.
+
+**Outcome:** Used. Reviewed in prompt 50.
+
+---
+
+## Prompt 50 — Independently review the dashboard frontend (read-only) (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Independently review the uncommitted analytics dashboard frontend against the six backend endpoint schemas and existing UI. Do not edit files or run Git-changing commands.
+>
+> Check field mappings, paise-to-INR formatting, partial-period labels, empty/error/retry behavior, accessibility basics, mobile overflow, and regressions to existing pages. Identify concrete issues with file references; distinguish actual bugs from optional improvements. Do not start new features. Do not touch `main` or `v1.0`.
+
+**What the assistant did:**
+
+- **Verified.** Real responses from the running backend (all six endpoints, both buckets, a partial bucket, an open loan) were written as typed TypeScript and checked with `tsc` against the frontend types: no missing, extra or mistyped field (a deliberate extra field was rejected, so the check works). Rupee formatting, partial labels, empty, error and retry behaviour and the existing pages' tests were fine.
+- **Bugs found.** The new fourth nav link made the header wider than the viewport at 360 px (7 px of sideways scrolling) and 320 px (47 px), on every page; payments axis labels such as `₹0.0.5` when the largest payment was 1, 3, 4 or 5 paise; "1 member owe money" and "— collected against it" wording. Optional points: hard-coded policy numbers in the page text, a live region on static notices, weak assertions and no test of the test-clock header.
+- **Housekeeping.** A scratch dev server left running by an earlier step was stopped.
+
+**Outcome:** Used. Fixed in prompts 51 and 52.
+
+---
+
+## Prompt 51 — Fix the three confirmed dashboard issues (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Fix the three confirmed dashboard issues only:
+>
+> 1. Fix `.site-header nav` / header layout in `frontend/src/styles.css` and `Layout.tsx` so navigation wraps or fits at 320px, 360px and 375px without page-level horizontal overflow.
+> 2. Fix `PaymentsSection.tsx` axis tick formatting so tiny paise values never produce malformed rupee labels. Keep integer-paise formatting; add tests for maxima of 1, 3, 4 and 5 paise.
+> 3. Fix singular/plural wording for one member owing money, and replace the null-percentage payment text with sensible wording.
+>
+> Add focused regression tests. Run frontend tests, Prettier, ESLint, TypeScript and production build. Do not change backend behavior or start new features. Do not run Git-changing commands, commit, push, tag, or touch `main`/`v1.0`. Report changed files and results.
+
+**What the assistant did:**
+
+- **Fixed.** `.site-header nav` now wraps (checked in the browser at 320, 360 and 375 px: no page-level overflow); the chart's top value starts at 10 paise so every tick is a whole number of paise (`dashboard/axis.ts`); "1 member owes money" and a sentence for a missing percentage (`dashboard/wording.ts`).
+- **Tests.** Axis tests for maxima of 1, 3, 4 and 5 paise and every maximum up to 5,000 paise; page and wording tests; a test of the CSS rule's text (vitest blanks stylesheets, so `vite.config.ts` lets that one file through). Breaking each fix made its tests fail. 267 frontend tests passed.
+- **Cleaned up.** The scratch dev server was stopped afterwards.
+
+**Outcome:** Used. Followed by prompt 52.
+
+---
+
+## Prompt 52 — Last wording issue, and a complexity review of the axis helper and config (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Finish the remaining dashboard wording issue only: when the previous-period demand conversion rate is null, replace the em-dash wording with a clear explanation that no meaningful rate comparison is available. Add a focused regression test.
+>
+> Then review the new axis helper and `vite.config.ts` CSS-test exception for unnecessary complexity. Do not change behavior that is already correct. Run frontend tests, Prettier, ESLint, typecheck and build. Do not run Git-changing commands, commit, push, tag, or touch `main`/`v1.0`. Report results and any concerns.
+
+**What the assistant did:**
+
+- **Fixed.** When the previous period's conversion rate is null, the note now says that no rate comparison is available because none of that period's reservations has been settled (`previousConversionNote`), with unit and page tests; putting the old behaviour back made both fail.
+- **Reviewed for complexity.** The axis helper is small and was left alone; its exhaustive test was cut from 25,000 to 5,000 cases and collects failures into one assertion; the config exception became a single pattern; a redundant CSS test was removed.
+- **Results.** 269 frontend tests in 16 files passed with Prettier, ESLint, `tsc` and the production build.
+
+**Outcome:** Used.
+
+---
+
+## Prompt 53 — Update README, PROMPTS and SUBMISSION for the analytics work (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Update `README.md`, `PROMPTS.md`, and `SUBMISSION.md` for the completed analytics dashboard and endpoints. Preserve the required README heading order and the two-page submission limit. Document the actual tests and checks run, AI assistance, deployment details, and known limitations without claiming unverified PostgreSQL or accessibility checks.
+>
+> Inspect existing content before editing. Do not modify application code or seed data. Do not run Git-changing commands, commit, push, tag, or touch `main`/`v1.0`. Report changed files and confirm the README structure and submission length.
+
+**What the assistant did:**
+
+- **Edited only** `README.md`, `PROMPTS.md` and `SUBMISSION.md`; no application code, seed data or other file, and no Git command that changes anything. The prompt texts above were taken verbatim from the session record (the context-continuation summaries and background-task notices are not prompts and are not logged).
+- **`README.md`.** The heading order is unchanged (1 to 12 with 5a). Added: status note; analytics architecture; the dashboard in running locally; a deployment note that it is not deployed and needs no new setting; the new test counts (1285 backend, 269 frontend) and what was run, labelled by what each number comes from; analytics mutation checks; the six endpoints and assumptions A22 to A27; the dashboard in the reviewer aids; limitations; the AI disclosure. `backend/coverage.txt` was not regenerated and the README says so.
+- **`SUBMISSION.md`.** Section A (still five sentences), the Testing and UI rows of G and next step 4 were updated. Length, measured by rendering through headless Chrome with a line spacing calibrated against the earlier baseline (1.86 pages at 10.5 pt, matching the 1.85 recorded in prompt 33): 1.90 pages at 10.5 pt with 18 mm margins and 1.68 at 10 pt with 15 mm margins (2 printed pages each); 2.09 at 11 pt with 20 mm margins (3 pages; it was 2.03 before). The M6 date and hash placeholders remain.
+- **Not claimed.** PostgreSQL behaviour of the analytics code, CI results for it, any accessibility audit of the dashboard, or deployment of it.
+- **Left open, closed in prompt 54.** The M6 date and hash in `SUBMISSION.md` (filled from Git history) and the 812-test `backend/coverage.txt` (regenerated from a new full run). The two sentences above that say so describe the state at the time.
+
+**Outcome:** Used. Checked and completed in prompt 54.
+
+---
+
+## Prompt 54 — Submission housekeeping: M6 metadata, coverage.txt, final checks (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Finish analytics-dashboard submission housekeeping only.
+>
+> 1. Inspect `README.md`, `PROMPTS.md`, `SUBMISSION.md`, and `backend/coverage.txt`. Fill the M6 date/hash only from verified Git history; do not invent values or put an uncommitted feature hash in the M0–M6 table.
+> 2. Regenerate `backend/coverage.txt` from the current full backend suite and ensure its reported test count and coverage match the actual run.
+> 3. Complete `PROMPTS.md` entry 53 based on the actual outcome. Keep prompt text faithful to the session record.
+> 4. Review all new and modified files for secrets, scratch artifacts, inaccurate claims, and accidental changes. Check README heading order and `SUBMISSION.md` length.
+>
+> Run the full backend and frontend suites, Ruff, Prettier, ESLint, TypeScript and frontend production build if practical. If the backend run is unusually slow, investigate with targeted diagnostics rather than silently claiming success.
+> Do not change application behavior or seed data. Do not run Git-changing commands: no commit, push, tag, reset, checkout or branch changes. Do not touch `main` or `v1.0`. I will handle all Git operations.
+> Report exact changed files, verified M6 metadata, test/coverage results, documentation checks, and any unresolved issues. Do not claim PostgreSQL validation, CI success or deployment of the analytics feature unless verified.
+
+**What the assistant did:**
+
+- **Git history (read-only commands only: log, tag, cat-file, show, diff, status).** The M6 commit is `3f4aa66` ("finalize M6 documentation and coverage", 2026-10-18 23:43 IST); it changed exactly `PROMPTS.md`, `README.md`, `SUBMISSION.md` and `backend/coverage.txt`, and `v1.0` is an annotated tag on it. `SUBMISSION.md` row M6 now reads `2026-10-18` and `3f4aa66`. The analytics work has no commit, so no hash for it was written anywhere in the M0 to M6 table. The Git-hygiene row no longer says "no `v1.0` yet"; its score (2) was left for the owner to judge.
+- **Full backend run.** `pytest -p no:cacheprovider --durations=15` from `backend/`: **1285 passed, 1 warning in 133.74 s (2 min 13 s)**; the slowest test took 2.13 s. This is normal speed, so the 30-minute run (prompts 47 and 48) was an outlier; its cause is still not proven. Nothing needed investigating beyond the duration report.
+- **`backend/coverage.txt` regenerated** from that run's `.coverage` data (same layout as before, with the pytest result line of this run): whole `app/` 2532 statements, 10 missed, 282 branches, 11 partly covered, 99%; business-rules layer 1252, 3, 176, 5, 99%; every analytics module 100%. Compared file by file with the M6 report: the same 10 missed statements, and only `api/deps.py` and `main.py` differ, by a few covered lines. The README coverage table and the sentence in `SUBMISSION.md` section A were updated to match.
+- **Other checks (all passed).** `ruff check .` and `ruff format --check .` (123 files); frontend `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test` (269 tests in 16 files) and `npm run build`.
+- **Review of the changes.** 15 modified tracked files and 24 untracked entries (one of them the new `frontend/src/dashboard/` folder): the tracked code diffs are additive apart from one import line, the nav test's expected list and the vitest `css` option; a pattern scan of the modified and new files found no secrets (only prose in the documents and the documented `rental:rental` local defaults); no scratch file is in the repository (the scripts and the prompt extract used for these documents are outside it); `.env` and `frontend/.env` are ignored and untouched. The README's numbered headings are identical to `HEAD`'s in text and order. `SUBMISSION.md` still has sections A to G, five sentences in A, seven milestone rows, five next steps and 11 rubric rows, and measures 1.90 pages at 10.5 pt with 18 mm margins, 1.68 at 10 pt with 15 mm margins (2 printed pages each) and 2.07 at 11 pt with 20 mm margins (3 pages), with the same calibrated rendering as in prompt 53.
+- **Not claimed anywhere:** PostgreSQL validation of the analytics code, CI results for it, or deployment of it. No Git command that changes anything was run, and no application code or seed data was changed.
+
+**Outcome:** Used. Committed by the owner in `66d3637`.
+
+---
+
+## Prompt 55 — Investigate and fix the CI failure in the utilization category test (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Investigate the CI failure:
+> `tests/api/test_analytics_utilization_api.py::test_uppercase_non_ascii_letters_group_the_way_the_database_folds_them_like_the_items_filter`
+>
+> Inspect the full traceback and the CI backend workflow/database configuration. Determine why this test fails in CI but passed locally. Make the smallest correct fix and add or adjust a regression test if needed. Do not weaken the test merely to make CI green. Run the targeted test, full backend suite, and Ruff. Do not run Git-changing commands, commit, push, tag, or touch `main`/`v1.0`. Report the root cause and exact results.
+
+**What the assistant did:**
+
+- **What could and could not be read.** The CI log needs a GitHub login and the `gh` tool is not installed, so the traceback was not read. The workflow (`.github/workflows/ci.yml`) was read: the backend job runs the suite on SQLite and then on `postgres:16-alpine`.
+- **Root cause.** The test looked for the group named `école` among the by-category rows. SQLite's `lower()` folds ASCII letters only, so `École`, `ÉCOLE` and `école` make two groups there, one named `école`. Where the database folds the accented capital too (PostgreSQL in a UTF-8 locale), they are one group of three, named after its first spelling in string order, `ÉCOLE`, so no group is named `école` and the lookup raised `StopIteration`. It was reproduced by running the test on SQLite with a scratch plugin (outside the repository) that makes `lower()` fold Unicode: `StopIteration` at the lookup line. The application was behaving as designed.
+- **Fix, test only.** The test now asserts that the group sizes are exactly `[3]` or `[1, 2]` and that the number of items `GET /items?category=école` returns is one of those sizes. It was not weakened: replacing the database's `lower()` with Python's in the service makes it fail on plain SQLite (`assert 1 in [3]`), and the test that pins SQLite's exact two-group split is untouched.
+- **Results (SQLite).** The targeted test passed on plain SQLite and under the Unicode-folding plugin; the other 313 analytics API tests passed under the plugin (the SQLite-only test fails there, as expected, and is skipped on PostgreSQL); the full backend suite gave 1285 passed in 214.83 s with 99% coverage; Ruff check and format check passed.
+- **Not shown.** PostgreSQL itself was not available, and no CI run of the corrected test had been seen. No Git command that changes anything was run.
+
+**Outcome:** Used. Re-verified in prompt 56; the correction is uncommitted until the owner commits it.
+
+---
+
+## Prompt 56 — Final verification of the branch (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Perform a final verification of the current branch. Investigate and fix the known CI test failure without weakening tests. Run the full backend and frontend test suites, coverage, linting, type checking and production build. Review the changes for correctness, secrets, unrelated files and documentation accuracy.
+>
+> If any required check fails, do not commit; report the failure. If all checks pass, show me the final Git status, diff summary, test results and proposed commit details, then wait for my approval before committing.
+>
+> Do not push, merge, tag, rewrite history, or modify `main` or `v1.0`. Preserve the required AI disclosure and audit trail.
+
+**What the assistant did:**
+
+- **Git state (read-only commands).** `HEAD` is `66d3637` ("add rental analytics dashboard with utilization and demand reports", the owner's commit of 2026-10-19 10:53 IST, 52 files), `origin/feature/analytics-dashboard` is at the same commit, and `main` and `v1.0` are still at `3f4aa66`. The only uncommitted change at the start was the corrected test.
+- **Checks, all passed.** Backend: `pytest -p no:cacheprovider` gave 1285 passed, 1 warning in 130.35 s (slowest test 2.3 s) with branch coverage 2532 statements, 10 missed, 282 branches, 11 partly covered, 99%; `backend/coverage.txt` still matches fresh reports from that run exactly; `ruff check .` and `ruff format --check .` (123 files). Frontend: `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test` (269 tests in 16 files) and `npm run build`.
+- **Review.** The diff against `main` is 52 files, all in the expected areas (backend `app` and `tests`, frontend `src` plus the `vite.config.ts` test option, the three documents and `coverage.txt`); no untracked, binary or scratch files; no secret-like strings in the added code or documents.
+- **Documentation corrected.** The README and `SUBMISSION.md` still said the analytics work was uncommitted and that CI had not run it. They now say it is committed as `66d3637` and pushed but not merged or deployed, that CI ran it and one analytics test was reported failing on PostgreSQL (cause: the test, since corrected; no CI re-run seen by me), and that no other CI result for the branch has been seen. The AI disclosure now counts 22 further prompts (35 to 56). Entry 54 was closed and entries 55 and 56 added; nothing earlier was changed.
+- **Stopped for approval.** The assistant made no commit in this prompt: it ended with the status, diff summary, results and a question, to wait for the owner's approval, which came in prompt 57. No push, merge, tag or history change; `main` and `v1.0` untouched.
+
+**Outcome:** Used. Approved in prompt 57.
+
+---
+
+## Prompt 57 — Approval to commit (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Yes: make the single commit as proposed.
+
+**What the assistant did:**
+
+- **Approval.** This answered the question that ended prompt 56, whose recap and options (one commit, or a test commit and a documentation commit) were shown in the app's next-step box; the full commit message was not written out in the reply, so the message used was the assistant's own wording of the change.
+- **Before committing.** This entry and the matching change to the AI disclosure in `README.md` section 12 were written, because from here on the assistant ran two Git commands that change the repository. The commit that contains them cannot name its own hash, so the hash is not recorded in this file.
+- **The commit.** `git add` with exactly four named files (`README.md`, `PROMPTS.md`, `SUBMISSION.md`, `backend/tests/api/test_analytics_utilization_api.py`) and one `git commit` on the branch `feature/analytics-dashboard`. No `Co-Authored-By` trailer was added, following the owner's earlier instruction (prompt 25); the AI assistance is recorded in `README.md` section 12 and in this log. No push, merge, tag, amend, reset or branch change; `main` and `v1.0` were not touched.
 
 **Outcome:** Pending review.
