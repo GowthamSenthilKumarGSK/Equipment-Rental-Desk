@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { AsyncState } from "../useAsync";
+import { Icon, type IconName } from "../components/Icon";
 import { ErrorNotice, Loading, Notice } from "../components/Notice";
 import { formatDateRange, formatIst } from "../format";
 import type { AnalyticsWindow } from "../types";
@@ -9,6 +10,7 @@ interface ReportSectionProps<T> {
   title: string;
   what: string; // "utilization", for "Loading utilization…"
   state: AsyncState<T>;
+  icon?: IconName;
   children: (data: T) => ReactNode;
 }
 
@@ -16,10 +18,20 @@ interface ReportSectionProps<T> {
  * One report on the dashboard. Each report loads on its own, so a failing report shows its own error
  * with its own retry while the others stay usable.
  */
-export function ReportSection<T>({ id, title, what, state, children }: ReportSectionProps<T>) {
+export function ReportSection<T>({
+  id,
+  title,
+  what,
+  state,
+  icon,
+  children,
+}: ReportSectionProps<T>) {
   return (
     <section className="report" aria-labelledby={`${id}-heading`}>
-      <h2 id={`${id}-heading`}>{title}</h2>
+      <h2 id={`${id}-heading`}>
+        {icon && <Icon name={icon} size={20} />}
+        {title}
+      </h2>
       {state.error && <ErrorNotice error={state.error} onRetry={state.reload} />}
       {state.loading && !state.data && <Loading what={what} />}
       {state.data && children(state.data)}
@@ -50,26 +62,4 @@ export function Limitation({ title, children }: { title: string; children: React
   );
 }
 
-interface StatProps {
-  label: string;
-  value: string;
-  note?: ReactNode;
-}
-
-export function Stat({ label, value, note }: StatProps) {
-  return (
-    <li className="stat">
-      <span className="stat__label">{label}</span>
-      <strong className="stat__value">{value}</strong>
-      {note && <span className="stat__note muted">{note}</span>}
-    </li>
-  );
-}
-
-export function Stats({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <ul className="stats" aria-label={label}>
-      {children}
-    </ul>
-  );
-}
+export { Stat, Stats } from "../components/Kpis";

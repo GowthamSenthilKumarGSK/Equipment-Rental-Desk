@@ -66,7 +66,11 @@ Rules for this file:
 | 54  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: M6 date and hash filled from Git history, `coverage.txt` regenerated from a 1285-test run, entry 53 closed; committed by the owner in `66d3637` |
 | 55  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: CI failure traced to a wrong assumption in one test (PostgreSQL folds `É` in `lower()`, SQLite does not); test assertions corrected, application unchanged; 1285 backend tests passed on SQLite; CI re-run not seen |
 | 56  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: final verification (backend 1285 and frontend 269 tests, coverage, Ruff, Prettier, ESLint, TypeScript, build all passed); stale documentation corrected; stopped for the owner's approval, given in prompt 57 |
-| 57  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: the owner's approval to commit; one commit of four files made (README, PROMPTS, SUBMISSION and the corrected test); not pushed |
+| 57  | 2026-10-19 | Analytics | Claude Code (Sonnet 5.5)  | Used: the owner's approval to commit; one commit of four files made (README, PROMPTS, SUBMISSION and the corrected test; `4f98780`); not pushed |
+| 58  | 2026-10-19 | Redesign  | Claude Code (Sonnet 5.5)  | Edited: all five pages and the layout redesigned (design tokens, sidebar and drawer, key figures, confirmations, overdue grouping); 309 frontend tests, Prettier, ESLint, TypeScript and build passed; browser checks at 1440, 768 and 320 px; nothing committed; reviewed in prompt 59 |
+| 59  | 2026-10-19 | Redesign  | Claude Code (Sonnet 5.5)  | Used: stylesheet compared with the committed one, regression review (three accessibility and layout fixes, one test added), documentation updated; 310 frontend tests and all frontend checks passed; two risks it reported were addressed in prompt 60 |
+| 60  | 2026-10-19 | Redesign  | Claude Code (Sonnet 5.5)  | Used: focus no longer lost when a used button disappears (3 tests); Items counts no longer cost six extra requests below 200 items (summary tests rewritten); documents brought to the final 315-test run; rechecked in prompt 61 |
+| 61  | 2026-10-19 | Redesign  | Claude Code (Sonnet 5.5)  | Pending review: final pre-commit check (changed files, full diff, documents against the real 315-test run, Prettier, ESLint, TypeScript, build all passed); no blockers found; commit message proposed; nothing committed |
 
 ---
 
@@ -1656,5 +1660,136 @@ Business-rule delegation, status codes and error mapping for the tested inputs, 
 - **Approval.** This answered the question that ended prompt 56, whose recap and options (one commit, or a test commit and a documentation commit) were shown in the app's next-step box; the full commit message was not written out in the reply, so the message used was the assistant's own wording of the change.
 - **Before committing.** This entry and the matching change to the AI disclosure in `README.md` section 12 were written, because from here on the assistant ran two Git commands that change the repository. The commit that contains them cannot name its own hash, so the hash is not recorded in this file.
 - **The commit.** `git add` with exactly four named files (`README.md`, `PROMPTS.md`, `SUBMISSION.md`, `backend/tests/api/test_analytics_utilization_api.py`) and one `git commit` on the branch `feature/analytics-dashboard`. No `Co-Authored-By` trailer was added, following the owner's earlier instruction (prompt 25); the AI assistance is recorded in `README.md` section 12 and in this log. No push, merge, tag, amend, reset or branch change; `main` and `v1.0` were not touched.
+
+**Outcome:** Used. The commit is `4f98780` (on `feature/analytics-dashboard`).
+
+---
+
+## Prompt 58 — Redesign of the frontend (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Redesign the Equipment Rental Desk frontend into a polished, production-quality SaaS application. Focus on visual quality, usability, information hierarchy and responsive behavior—not just colors.
+> First inspect the existing React + TypeScript frontend, CSS, routes, tests and API integrations. Then implement the redesign using the existing stack. Do not replace working business logic or backend APIs.
+> Design direction
+>
+> * Professional equipment-rental operations platform: clean, modern, confident and data-focused.
+> * Use a restrained palette: deep navy, white, cool neutral backgrounds, blue primary actions, and semantic status colors.
+> * Create a consistent design system for typography, spacing, borders, shadows, buttons, inputs, tables, badges, dialogs and cards.
+> * Prefer clean layouts and useful information density over excessive gradients, giant cards or decorative effects.
+> * Use consistent icons where useful. Do not add dependencies unless genuinely necessary.
+>
+> Redesign all existing pages
+>
+> 1. Application layout: polished navigation, clear active states, consistent page headers and responsive mobile navigation.
+> 2. Items: inventory KPI summary, compact search/filter toolbar, attractive inventory table or responsive list, readable status badges, replacement values, due dates and obvious actions. Preserve existing search, filters and item operations.
+> 3. Members: improve member search, account balances, active loans, suspension status, transaction history and actionable reasons for blocked operations.
+> 4. Overdue: prioritize overdue severity, days late, outstanding fees and actionable loan details. Make the most urgent cases easy to identify.
+> 5. Dashboard: refine the existing analytics cards, charts, demand funnel, utilization, payments, overdue aging and maintenance snapshot. Preserve all six API integrations, date controls, partial-period labels and data limitations.
+>
+> Interaction and responsive behavior
+>
+> * Support desktop, tablet and mobile, including 320px-wide screens without page-level horizontal overflow.
+> * Use proper loading skeletons, empty states, retryable errors, confirmation dialogs and success/error feedback.
+> * Make forms, tables, navigation and actions keyboard accessible, with visible focus states and meaningful labels.
+> * Keep currency in INR, dates consistent with the existing IST behavior, and status colors consistent across pages.
+> * Preserve URL parameters, API request behavior, `X-Test-Clock` support and all existing functionality.
+> * Do not fabricate metrics or hard-code sample data into production screens.
+>
+> Verification
+>
+> * Add or update frontend tests for important visual states and interactions.
+> * Run all frontend tests, Prettier, ESLint, TypeScript and the production build.
+> * Check the actual browser rendering on desktop and narrow mobile widths.
+> * Review existing pages for regressions, not just the Dashboard.
+> * Do not modify backend behavior or seed data.
+>
+> Do not run Git-changing commands. Do not commit, push, merge, tag, or rewrite history. I will handle all Git operations.
+> At the end, report the design changes, files changed, checks performed and any remaining issues.
+
+**What the assistant did:**
+
+- **Inspected first.** All pages, components, `styles.css`, routes, the API client, the hooks and the 269 existing tests, to list which roles, labels, texts and URL parameters the tests and users rely on.
+- **Design system and shell.** `styles.css` was rewritten on design tokens (light and dark). New components: `Icon` (inline SVG, no dependency), `PageHeader`, `Kpis` (the dashboard's `Stat` and `Stats`, moved), `Skeleton`, `EmptyState`, `ConfirmDialog`, `Avatar`, `TableWrap`; `Layout` became a sidebar with a drawer on small screens.
+- **Pages.** Items (six-figure inventory summary, rows), item detail (two columns), members (avatar rows), a member's account (figures, next-step links, marked overdue loans), overdue (summary figures, days-late groups in `severity.ts`, cards on a phone) and the dashboard (header, controls bar, section icons, tone-coloured figures). Cancel reservation, start maintenance and suspend member now ask for confirmation.
+- **What did not change.** No backend or seed file, no `api.ts` function, no URL parameter, no `X-Test-Clock` handling. The only new requests are the six one-record item counts on the Items page.
+- **Tests.** 269 became 309: new files for the dialog, the layout, the inventory summary and the severity groups; the CSS guard test was rewritten for the new layout rules; existing tests were changed only where a confirmation step was added.
+- **Checks.** Prettier, ESLint, `tsc -b`, 309 tests and the production build passed. In the browser (a scratch SQLite backend, seeded, and the Vite dev server, both stopped afterwards) every page was viewed at 1440, 768 and 320 pixels with no sideways page scroll measured at 320 and 768, the drawer and a dialog were tried, and dark colours were looked at on one page.
+- **Git and documents.** No Git command that changes anything was run, and the README, `SUBMISSION.md` and this file were not edited; that was left to prompt 59.
+
+**Outcome:** Edited. Reviewed in prompt 59, which found and fixed three small accessibility and layout problems.
+
+---
+
+## Prompt 59 — Review and finalize the redesign (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Review and finalize the uncommitted frontend redesign. Do not add new features.
+>
+> 1. Inspect the complete `styles.css` replacement and recover any prior fixes that should remain, without discarding intentional redesign changes.
+> 2. Review all five pages for regressions in existing API interactions, confirmations, loading/error states, keyboard focus and responsive behavior.
+> 3. Update `README.md`, `SUBMISSION.md` and `PROMPTS.md` to reflect the redesign and the verified 309 frontend tests. Preserve README heading order, the two-page submission limit, and accurate AI disclosure.
+> 4. Run frontend tests, Prettier, ESLint, TypeScript and the production build. Inspect the final changes for scratch URLs, sample data, secrets and unrelated edits.
+>
+> Do not change backend behavior or seed data. Do not run Git-changing commands, commit, push, merge, tag or rewrite history. Report exact changed files, test results and remaining risks. I will handle Git operations.
+
+**What the assistant did:**
+
+- **Stylesheet.** The old file (from `HEAD`, 598 lines) was compared with the new one rule by rule: the only selectors that no longer exist are the old header and footer (`.site-header*`, `.site-footer`, `.container`, `main`, `main:focus`) and the old list cards (`.card`), plus two nested rules renamed for the new notice and report markup; the earlier fixes (charts scroll sideways inside their box, the bar-list grid, text wrapping in figures, the focus ring) are all still there, the focus ring now blue instead of amber on purpose. Four rules nothing used were removed. `git status` had listed `styles.css` as modified before the redesign began; that earlier uncommitted version was overwritten before a copy was kept. The 598 lines read before the rewrite match the committed file's 598, so the change was probably only line endings, but I cannot prove it.
+- **Regression review.** Items, item detail, members, a member's account, overdue and the dashboard were read against the previous behaviour (requests, confirmations, loading and error states, focus, narrow screens). Fixes: the page behind an open menu drawer is now `inert`, so Tab cannot reach it; the drawer becomes visible at once when opened, so focus can move into it; the whole-tile focus ring for linked figures is only used where `:has()` exists, so no browser loses the ring; jump links (for example "Go to payments") no longer land under the sticky bar on a phone. One test was added for the `inert` page (310 in all).
+- **Documentation.** `README.md` (the status note, the file tree, the frontend test table and counts, a design and layout bullet, accessibility, known limitations, the browser-check statement, section 12), `SUBMISSION.md` (section A, the Testing and UI rows; length measured through headless Chrome with the earlier calibrated spacing: 1.90 pages at 10.5 pt with 18 mm margins and 1.66 at 10 pt with 15 mm margins, 2 printed pages each; 2.09 at 11 pt with 20 mm margins, 3 printed; it needed a few words trimmed to stay at the earlier 1.90, and section A is still five sentences) and this file were updated. The README heading order is unchanged and the AI disclosure now counts prompts 35 to 59.
+- **Checks.** Prettier, ESLint, `tsc -b`, 310 tests in 20 files and the production build passed. The drawer was tried again in the browser with real clicks and keys, and sideways scrolling was measured at 320 pixels on nine addresses.
+- **Git.** Only read-only commands (`status`, `diff`, `show`, `log`). No commit, push, merge, tag or history change; `main` and `v1.0` untouched.
+
+**Outcome:** Used. Two of the risks it reported (focus after a dialog, and the extra requests) were addressed in prompt 60.
+
+---
+
+## Prompt 60 — Final pre-commit review of the redesign (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Perform a final pre-commit review of the uncommitted UI redesign.
+>
+> 1. Fix dialog focus restoration when the triggering control disappears after an action, with a regression test.
+> 2. Review the six extra Items-page requests and reduce them only if an existing API or simple safe approach supports it.
+> 3. Verify README, PROMPTS and SUBMISSION match the final 310-test run and preserve the required structure and page limit.
+> 4. Inspect the complete diff for regressions, accidental changes, secrets and scratch artifacts.
+>
+> Run frontend tests, Prettier, ESLint, TypeScript and the production build. Do not modify backend behavior or seed data. Do not run Git-changing commands, commit, push, merge, tag or rewrite history. Report exact changes and any remaining risks; I will handle Git operations.
+
+**What the assistant did:**
+
+- **Focus.** When the button used for an action disappears afterwards ("Cancel reservation" once cancelled, "Suspend member" once replaced by "Lift suspension", "Return" once returned), focus used to fall to the top of the page. A small hook, `useFocusResult`, now moves focus to the result message once the page has the result and has fetched again, but only if focus was lost; a control that still exists keeps it. It is wired into the item page and the member page; payments and added items do not move focus. Three regression tests were added (cancel reservation, suspend, and one showing a button that is still there keeps focus); switching off the focus call makes the first two fail.
+- **Items-page requests.** The six one-record count requests were replaced. The page already asks for up to 200 items to build the category choices; when that answer holds every item the counts are tallied from it, so there is no extra request. Only an inventory larger than that falls back to the six requests. No new endpoint and no use of the analytics API (a single analytics call would have been fewer requests but ties the Items page to a different feature and costs more on the server). The category choices still see only the first 200 items, as before. The summary tests were rewritten (5 became 7).
+- **Documents.** Counts, test table, design bullet, known limitations, the focus wording and the AI disclosure (26 prompts, 35 to 60) now match the final run: 315 tests in 20 files, 5 more than the 310 of prompt 59. The README heading order and the `SUBMISSION.md` length (1.90 pages at 10.5 pt, 2 printed) were rechecked.
+- **Full diff.** Read for regressions, accidental edits, secrets and scratch artefacts (details in the reply); no backend or seed file changed.
+- **Checks.** Prettier, ESLint, `tsc -b`, 315 tests and the production build. In the browser (scratch seeded SQLite backend, stopped afterwards) the Items page asked for two requests where it had asked for eight, and cancelling a reservation with real clicks left focus on the "Reservation cancelled." message.
+- **Git.** Only read-only commands (`status`, `diff`, `log`). No commit, push, merge, tag or history change.
+
+**Outcome:** Used. Rechecked in prompt 61.
+
+---
+
+## Prompt 61 — Final pre-commit check of the redesign (2026-10-19, Claude Code)
+
+**Prompt (verbatim, from the session record):**
+
+> Perform the final pre-commit check of the UI redesign.
+>
+> 1. Verify only intended files are changed and inspect the complete diff.
+> 2. Confirm README heading order, PROMPTS.md entries, SUBMISSION.md's two-page limit, AI disclosure and the final 315-test count.
+> 3. Run frontend tests, Prettier, ESLint, TypeScript and the production build.
+> 4. Report any blockers and the exact files changed. If everything passes, give me the recommended commit message.
+>
+> Do not add features or modify backend behavior or seed data. Do not run Git-changing commands: no commit, push, merge, tag, reset or history rewriting. Do not edit session logs to conceal AI assistance or omit prompts that should be recorded. I will review the results and perform all Git operations myself.
+
+**What the assistant did:**
+
+- **Changed files.** Read-only Git commands (`status`, `diff --stat`, `diff`, `log`, `rev-parse`) showed branch `feature/analytics-dashboard` at `4f98780` with 18 modified tracked files (the 15 frontend sources and tests, `README.md`, `SUBMISSION.md`, `PROMPTS.md`) and 14 new frontend files; nothing under `backend/`, no seed data, no configuration file, no `dist`, no scratch file; `main` and `v1.0` still at `3f4aa66`. The stylesheet's braces balance and every `var()` it uses is defined. The component and page diffs were read once more: no leftover debugging, TODO, `.only`, lint suppression, hard-coded URL or secret.
+- **Documents.** Against a fresh test run: the README's test table has 20 rows summing to 315 and every row equals the real count for its file; the README and `SUBMISSION.md` say 315 in 20 files (the only other count in them, 269, is the labelled count from before the redesign); README headings are identical to the committed file; `PROMPTS.md` has entries and table rows 1 to 61 without a gap and every table is well formed; `SUBMISSION.md` is 1.90 pages at 10.5 pt with 18 mm margins (2 printed), 1.66 at 10 pt with 15 mm, 2.09 at 11 pt with 20 mm (3 printed), with A to G, five sentences in A, 7 milestone rows and 11 rubric rows. The AI disclosure now counts 27 further prompts (35 to 61) and says the redesign prompts (58 to 61) ran only read-only Git commands. Entry 34's outcome still reads "Pending review"; it was already so in the committed file and was not changed.
+- **Checks.** Prettier, ESLint, `tsc -b`, 315 tests in 20 files and the production build all passed.
+- **Git.** Only read-only commands. No commit, push, merge, tag, reset or history change. This entry and the disclosure count were added so that this prompt is recorded like every other.
 
 **Outcome:** Pending review.

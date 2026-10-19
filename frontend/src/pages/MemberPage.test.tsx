@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   apiError,
@@ -75,6 +75,39 @@ describe("member page", () => {
       "Their unpaid fees are over the limit. Record a payment to clear it.",
       "A loan is overdue by too long. It has to be returned first.",
     ]);
+  });
+
+  it("points each blocking reason to the place on the page where it is dealt with", async () => {
+    mockApi({ "GET /members/5/statement": { body: blocked } });
+
+    renderApp("/members/5");
+
+    const why = await screen.findByRole("region", { name: "Why this member can't borrow" });
+    expect(within(why).getByRole("link", { name: "Go to payments" })).toHaveAttribute(
+      "href",
+      "#payments-heading",
+    );
+    expect(within(why).getByRole("link", { name: "See the overdue loan" })).toHaveAttribute(
+      "href",
+      "#active-heading",
+    );
+    expect(screen.getByRole("heading", { name: "Payments" })).toHaveAttribute(
+      "id",
+      "payments-heading",
+    );
+  });
+
+  it("shows the account figures as a labelled summary, with the overdue row marked", async () => {
+    mockApi({ "GET /members/5/statement": { body: blocked } });
+
+    renderApp("/members/5");
+
+    const summary = await screen.findByRole("list", { name: "Account summary" });
+    expect(within(summary).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(summary).getByText("Owed by the member")).toBeInTheDocument();
+    const active = screen.getByRole("table", { name: "Reserved and checked-out items" });
+    const overdueRow = within(active).getByRole("link", { name: "Pressure Washer" }).closest("tr");
+    expect(overdueRow).toHaveClass("is-urgent");
   });
 
   it("says a member in good standing can borrow", async () => {
@@ -350,10 +383,42 @@ describe("suspension", () => {
 
     await user.type(await screen.findByLabelText("Reason (optional)"), "Damaged a tool");
     await user.click(screen.getByRole("button", { name: "Suspend member" }));
+    const dialog = await screen.findByRole("dialog", { name: "Suspend Kavita Iyer?" });
+    expect(within(dialog).getByText("Reason: Damaged a tool")).toBeInTheDocument();
+    expect(api.callsTo("POST /members/5/suspension")).toHaveLength(0); // nothing sent yet
+    await user.click(within(dialog).getByRole("button", { name: "Yes, suspend member" }));
 
     expect(await screen.findByText("Kavita Iyer is now suspended.")).toBeInTheDocument();
     expect(api.callsTo("POST /members/5/suspension")[0].body).toEqual({ reason: "Damaged a tool" });
     expect(await screen.findByRole("button", { name: "Lift suspension" })).toBeInTheDocument();
+  });
+
+  it("moves focus to the result when the Suspend button is replaced by Lift suspension", async () => {
+    let status: "active" | "suspended" = "active";
+    mockApi({
+      "GET /members/5/statement": () => ({
+        body: makeStatement({
+          member: makeMember({ status }),
+          block_reasons: status === "suspended" ? ["suspended"] : [],
+        }),
+      }),
+      "POST /members/5/suspension": () => {
+        status = "suspended";
+        return { body: makeMember({ status: "suspended" }) };
+      },
+    });
+    const { user } = renderApp("/members/5");
+
+    await user.click(await screen.findByRole("button", { name: "Suspend member" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", {
+        name: "Yes, suspend member",
+      }),
+    );
+
+    expect(await screen.findByRole("button", { name: "Lift suspension" })).toBeInTheDocument();
+    const notice = screen.getByText("Kavita Iyer is now suspended.").closest("[role=status]");
+    await waitFor(() => expect(notice).toHaveFocus());
   });
 
   it("suspends without a reason", async () => {
@@ -364,6 +429,11 @@ describe("suspension", () => {
     const { user } = renderApp("/members/5");
 
     await user.click(await screen.findByRole("button", { name: "Suspend member" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", {
+        name: "Yes, suspend member",
+      }),
+    );
 
     await screen.findByText("Kavita Iyer is now suspended.");
     expect(api.callsTo("POST /members/5/suspension")[0].body).toBeUndefined();
@@ -399,7 +469,25 @@ describe("suspension", () => {
     const { user } = renderApp("/members/5");
 
     await user.click(await screen.findByRole("button", { name: "Suspend member" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", {
+        name: "Yes, suspend member",
+      }),
+    );
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Member 5 is already suspended");
+  });
+
+  it("does not suspend when the confirmation is declined", async () => {
+    const api = mockApi({ "GET /members/5/statement": { body: makeStatement() } });
+    const { user } = renderApp("/members/5");
+
+    await user.click(await screen.findByRole("button", { name: "Suspend member" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Keep active" }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(api.callsTo("POST /members/5/suspension")).toHaveLength(0);
   });
 });

@@ -126,6 +126,76 @@ describe("overdue dashboard", () => {
     expect(within(table).getByText("₹170.00")).toBeInTheDocument();
   });
 
+  it("marks the most overdue loans first, in words as well as colour", async () => {
+    mockApi({
+      "GET /loans/overdue": {
+        body: page(
+          [
+            makeOverdue({ loan_id: 1, item_name: "Old Loan", days_overdue: 20 }),
+            makeOverdue({ loan_id: 2, item_name: "Week Loan", days_overdue: 9 }),
+            makeOverdue({ loan_id: 3, item_name: "Few Days", days_overdue: 4 }),
+            makeOverdue({ loan_id: 4, item_name: "Fresh Loan", days_overdue: 1 }),
+          ],
+          4,
+          20,
+        ),
+      },
+    });
+
+    renderApp("/overdue");
+
+    const table = await screen.findByRole("table", { name: "Loans past their due time" });
+    const rowOf = (name: string) =>
+      within(table).getByRole("link", { name }).closest("tr") as HTMLElement;
+    expect(rowOf("Old Loan")).toHaveClass("is-urgent");
+    expect(within(rowOf("Old Loan")).getByText("Over 2 weeks late")).toBeInTheDocument();
+    expect(rowOf("Week Loan")).toHaveClass("is-serious");
+    expect(within(rowOf("Week Loan")).getByText("1–2 weeks late")).toBeInTheDocument();
+    expect(rowOf("Few Days")).toHaveClass("is-watch");
+    expect(within(rowOf("Fresh Loan")).getByText("Just late")).toBeInTheDocument();
+    expect(rowOf("Fresh Loan")).not.toHaveClass("is-urgent", "is-serious", "is-watch");
+  });
+
+  it("summarises the list with figures that are exact for what is shown", async () => {
+    mockApi({
+      "GET /loans/overdue": {
+        body: page(
+          [
+            makeOverdue({ loan_id: 1, item_name: "Pressure Washer", days_overdue: 17 }),
+            makeOverdue({
+              loan_id: 2,
+              item_name: "Tile Cutter",
+              days_overdue: 3,
+              fee_if_returned_now_paise: 3_000,
+            }),
+          ],
+          2,
+          20,
+        ),
+      },
+    });
+
+    renderApp("/overdue");
+
+    const summary = await screen.findByRole("list", { name: "Overdue summary" });
+    expect(within(summary).getByText("Overdue loans")).toBeInTheDocument();
+    expect(within(summary).getByText("17 days")).toBeInTheDocument(); // the longest, first row
+    expect(within(summary).getByText("₹200.00")).toBeInTheDocument(); // 170 + 30
+    expect(within(summary).getByText("All overdue loans")).toBeInTheDocument();
+  });
+
+  it("says the fee figure covers only the loans on the page when there are more", async () => {
+    mockApi({
+      "GET /loans/overdue": {
+        body: page([makeOverdue()], 45, 20),
+      },
+    });
+
+    renderApp("/overdue");
+
+    expect(await screen.findByText("Only the loans on this page")).toBeInTheDocument();
+  });
+
   it("says when nothing is overdue", async () => {
     mockApi({ "GET /loans/overdue": { body: page([], 0, 20) } });
 
