@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import DashboardPage from "./pages/DashboardPage";
 import ItemDetailPage from "./pages/ItemDetailPage";
 import ItemsPage from "./pages/ItemsPage";
 import MemberPage from "./pages/MemberPage";
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/members" element={<MembersPage />} />
         <Route path="/members/:memberId" element={<MemberPage />} />
         <Route path="/overdue" element={<OverduePage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Layout>

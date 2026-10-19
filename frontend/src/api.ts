@@ -1,16 +1,23 @@
 import { API_URL } from "./config";
 import { getTestClock } from "./testClock";
 import type {
+  AnalyticsSummary,
+  Bucket,
+  DemandReport,
   ErrorDetail,
   Item,
   ItemStatus,
   Loan,
+  MaintenanceReport,
   Member,
   MemberStatus,
+  OverdueAging,
   OverdueLoan,
   Page,
   Payment,
+  PaymentsReport,
   Statement,
+  UtilizationReport,
 } from "./types";
 
 /** Any failure talking to the API: a rule or validation error answered by the server, or no answer. */
@@ -192,4 +199,21 @@ export const api = {
 
   listOverdue: (params: { limit?: number; offset?: number }, signal?: AbortSignal) =>
     request<Page<OverdueLoan>>("GET", "/loans/overdue", { query: { ...params }, signal }),
+
+  // The read-only analytics reports. `days` is the length of the report period in IST days.
+  analyticsSummary: (days: number, signal?: AbortSignal) =>
+    request<AnalyticsSummary>("GET", "/analytics/summary", { query: { days }, signal }),
+  analyticsOverdueAging: (days: number, signal?: AbortSignal) =>
+    request<OverdueAging>("GET", "/analytics/overdue-aging", { query: { days }, signal }),
+  analyticsPayments: (days: number, bucket: Bucket, signal?: AbortSignal) =>
+    request<PaymentsReport>("GET", "/analytics/payments", { query: { days, bucket }, signal }),
+  analyticsUtilization: (days: number, bucket: Bucket, signal?: AbortSignal) =>
+    request<UtilizationReport>("GET", "/analytics/utilization", {
+      query: { days, bucket },
+      signal,
+    }),
+  analyticsDemand: (days: number, signal?: AbortSignal) =>
+    request<DemandReport>("GET", "/analytics/demand", { query: { days }, signal }),
+  analyticsMaintenance: (signal?: AbortSignal) =>
+    request<MaintenanceReport>("GET", "/analytics/maintenance", { signal }),
 };

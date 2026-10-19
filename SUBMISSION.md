@@ -4,7 +4,7 @@
 
 ## A. What I built
 
-Equipment Rental Desk is a tool-library system (FastAPI, SQLAlchemy and Alembic on PostgreSQL, React/TypeScript UI) that enforces every Problem 1 rule in the backend. All Core features are complete (member and item CRUD, reserve, check-out, return, cancel, payments, overdue list, statement, and a UI with filters, valid-actions-only item pages, a "why can't this member borrow?" view, an overdue dashboard); no Stretch item was attempted. Time rules can be tried with the `X-Test-Clock` header, enabled on the live API (`ALLOW_TEST_CLOCK=true` in `render.yaml`) and not exposed in the hosted UI. It runs on free tiers; read-only checks on 18 October 2026 confirmed health, 13 seeded items, overdue list, docs, CORS and deep links. My local SQLite run passed 812 backend tests at 99% coverage (`backend/coverage.txt`), and GitHub Actions [run 39142792206](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39142792206) on `182232b` passed all three jobs (backend with PostgreSQL pytest, frontend, container), but PostgreSQL row locking under real contention is reasoned, not proven.
+Equipment Rental Desk is a tool-library system (FastAPI, SQLAlchemy and Alembic on PostgreSQL, React/TypeScript UI) that enforces every Problem 1 rule in the backend. All Core features are complete (member and item CRUD, rental flows, payments, overdue list, statement, UI views); beyond them I built a read-only analytics dashboard (six `GET /analytics/*` endpoints and a `/dashboard` page) on the uncommitted, undeployed branch `feature/analytics-dashboard`, not checked against the Stretch list. Time rules can be tried with the `X-Test-Clock` header, enabled on the live API (`render.yaml`) and not exposed in the hosted UI. It runs on free tiers; read-only checks on 18 October 2026 confirmed health, 13 seeded items, overdue list, docs, CORS and deep links. My local SQLite run now passes 1285 backend tests at 99% coverage (`backend/coverage.txt`), and GitHub Actions [run 39142792206](https://github.com/GowthamSenthilKumarGSK/Equipment-Rental-Desk/actions/runs/39142792206) on `182232b` (before the analytics work) passed all three jobs (backend with PostgreSQL pytest, frontend, container), but PostgreSQL row locking under real contention is reasoned, not proven, and no analytics code has run on PostgreSQL.
 
 ## B. Three design decisions
 
@@ -37,15 +37,15 @@ One error body, `{"error": {"code", "message", "request_id", "details"}}`; the r
 | M3 API | 2026-10-17 | `d5029e4` |
 | M4 UI | 2026-10-17 | `9d4930e` |
 | M5 Deployment | 2026-10-18 | `182232b` (amended twice) |
-| M6 Documentation and submission | [date — fill after commit] | [M6 commit hash — fill after commit] |
+| M6 Documentation and submission | 2026-10-18 | `3f4aa66` |
 
 ## F. If I had two more days
 
 1. Prove the row locks on PostgreSQL: a contention test that fails when a lock is removed.
 2. Close the two-instance start-up race with an advisory lock, tested on PostgreSQL.
 3. Add authentication, or a secret for `X-Test-Clock`: today anyone can send it.
-4. Check hosted logs, smoke-test the live API, run an accessibility pass.
-5. Smaller gaps: SQL status filter, cursor paging, member names on loans, edit/delete in the UI.
+4. Deploy the analytics dashboard and run its tests on PostgreSQL; check hosted logs, smoke-test the live API, run an accessibility pass.
+5. Smaller gaps: SQL status filter, cursor paging, loan member names, UI edit/delete.
 
 ## G. Self-assessment
 
@@ -57,8 +57,8 @@ One error body, `{"error": {"code", "message", "request_id", "details"}}`; the r
 | Logging and observability (8) | 3 | JSON logs with request id and levels, `/health`; I have not seen the logs on Render. |
 | Data modelling and persistence (9) | 4 | CHECKs, foreign keys, partial unique index, tested migration (also run in CI on PostgreSQL), seed. |
 | API design (8) | 4 | Resource paths, correct status codes, filters, paging, OpenAPI; offset paging can shift. |
-| UI usability (6) | 4 | Core flows, valid actions only, loading, empty and error states; no accessibility audit. |
-| Testing (7) | 4 | 812 backend tests, 99% coverage (local SQLite); 176 frontend tests, lint, type-check, build (recorded at M5 review, not re-run); CI run 39142792206 passed, incl. PostgreSQL pytest. |
+| UI usability (6) | 4 | Core flows, valid actions only, loading, empty and error states; no accessibility audit, dashboard included. |
+| Testing (7) | 4 | 1285 backend tests, 99% coverage (local SQLite); 269 frontend tests, lint, type-check, build (19 Oct); CI run 39142792206 on `182232b` passed, incl. PostgreSQL pytest. |
 | Deployment and operability (5) | 3 | Dockerfiles, Compose, `render.yaml`, `vercel.json` committed; live API seeded and refuses a foreign origin; container CI job passed. |
-| Git hygiene (4) | 2 | Milestone-tagged commits, no secrets; but one commit per milestone, no `type(scope):`, M5 amended twice, no `v1.0` yet. |
+| Git hygiene (4) | 2 | Milestone-tagged commits, no secrets, `v1.0` on the M6 commit; but one commit per milestone, no `type(scope):`, M5 amended twice. |
 | Documentation (4) | 4 | README follows the required structure with honest limitations; `PROMPTS.md` logs prompts. |
