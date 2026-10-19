@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.api import health, items, loans, members
+from app.api import analytics, health, items, loans, members
 from app.api.errors import register_error_handlers
 from app.api.middleware import REQUEST_ID_HEADER, RequestContextMiddleware
 from app.config import get_settings
@@ -62,6 +62,7 @@ def create_app(session_factory: sessionmaker[Session] | None = None) -> FastAPI:
     app.include_router(members.router)
     app.include_router(items.router)
     app.include_router(loans.router)
+    app.include_router(analytics.router)
     return app
 
 

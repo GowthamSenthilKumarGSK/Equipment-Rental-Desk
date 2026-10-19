@@ -1,73 +1,84 @@
 Backend coverage summary (branch coverage on)
 Generated from one full run: python -m pytest -p no:cacheprovider   (from backend/, SQLite)
-Test result of that run: 812 passed, 1 warning in 81.13s (0:01:21)
+Test result of that run: 1285 passed, 1 warning in 133.74s (0:02:13)
 Then: python -m coverage report -m   and   python -m coverage report --include="app/domain/*,app/services/*"
 
 === Overall (app/) ===
-Name                           Stmts   Miss Branch BrPart  Cover   Missing
---------------------------------------------------------------------------
-app\__init__.py                    0      0      0      0   100%
-app\api\__init__.py                0      0      0      0   100%
-app\api\deps.py                   53      0      8      0   100%
-app\api\errors.py                107      0     20      0   100%
-app\api\health.py                  5      0      0      0   100%
-app\api\items.py                  48      0      0      0   100%
-app\api\loans.py                  10      0      0      0   100%
-app\api\members.py                41      0      0      0   100%
-app\api\middleware.py             39      0      6      0   100%
-app\clock.py                      16      0      2      0   100%
-app\config.py                     25      0      4      0   100%
-app\db.py                         31      3      2      0    91%   62-64
-app\db_setup.py                   43      1      6      1    96%   80
-app\domain\__init__.py             0      0      0      0   100%
-app\domain\enums.py               35      0      0      0   100%
-app\domain\errors.py              15      0      0      0   100%
-app\domain\policy.py               8      0      0      0   100%
-app\domain\rules.py              111      0     38      0   100%
-app\healthcheck.py                13      1      2      1    87%   26
-app\logging_config.py             37      0     12      1    98%   48->47
-app\main.py                       34      0      4      0   100%
-app\models\__init__.py             6      0      0      0   100%
-app\models\base.py                11      0      0      0   100%
-app\models\item.py                14      0      0      0   100%
-app\models\loan.py                23      0      0      0   100%
-app\models\member.py              26      0      0      0   100%
-app\models\payment.py             14      0      0      0   100%
-app\models\types.py               17      1      8      1    92%   29
-app\repositories\__init__.py       0      0      0      0   100%
-app\repositories\items.py         27      0      4      0   100%
-app\repositories\loans.py         27      0      2      0   100%
-app\repositories\members.py       33      0      4      0   100%
-app\repositories\payments.py       9      0      0      0   100%
-app\schemas\__init__.py            0      0      0      0   100%
-app\schemas\common.py             18      0      2      0   100%
-app\schemas\items.py              37      0      2      0   100%
-app\schemas\loans.py              40      0      0      0   100%
-app\schemas\members.py            67      0      2      0   100%
-app\seed.py                       60      0      8      0   100%
-app\serve.py                      37      1      8      2    93%   48->exit, 86
-app\services\__init__.py           0      0      0      0   100%
-app\services\items.py             81      0     14      0   100%
-app\services\loans.py            115      2     20      2    97%   87, 119
-app\services\members.py          113      0     22      1    99%   118->121
-app\services\support.py           59      1     14      2    96%   93, 95->98
-app\services\views.py             48      0      0      0   100%
---------------------------------------------------------------------------
-TOTAL                           1553     10    214     11    99%
+Name                              Stmts   Miss Branch BrPart  Cover   Missing
+-----------------------------------------------------------------------------
+app\__init__.py                       0      0      0      0   100%
+app\api\__init__.py                   0      0      0      0   100%
+app\api\analytics.py                 26      0      0      0   100%
+app\api\deps.py                      57      0      8      0   100%
+app\api\errors.py                   107      0     20      0   100%
+app\api\health.py                     5      0      0      0   100%
+app\api\items.py                     48      0      0      0   100%
+app\api\loans.py                     10      0      0      0   100%
+app\api\members.py                   41      0      0      0   100%
+app\api\middleware.py                39      0      6      0   100%
+app\clock.py                         16      0      2      0   100%
+app\config.py                        25      0      4      0   100%
+app\db.py                            31      3      2      0    91%   62-64
+app\db_setup.py                      43      1      6      1    96%   80
+app\domain\__init__.py                0      0      0      0   100%
+app\domain\analytics.py             126      0     30      0   100%
+app\domain\enums.py                  35      0      0      0   100%
+app\domain\errors.py                 15      0      0      0   100%
+app\domain\policy.py                  8      0      0      0   100%
+app\domain\rules.py                 111      0     38      0   100%
+app\domain\utilization.py            69      0     20      0   100%
+app\healthcheck.py                   13      1      2      1    87%   26
+app\logging_config.py                37      0     12      1    98%   48->47
+app\main.py                          35      0      4      0   100%
+app\models\__init__.py                6      0      0      0   100%
+app\models\base.py                   11      0      0      0   100%
+app\models\item.py                   14      0      0      0   100%
+app\models\loan.py                   23      0      0      0   100%
+app\models\member.py                 26      0      0      0   100%
+app\models\payment.py                14      0      0      0   100%
+app\models\types.py                  17      1      8      1    92%   29
+app\repositories\__init__.py          0      0      0      0   100%
+app\repositories\analytics.py        72      0      0      0   100%
+app\repositories\items.py            27      0      4      0   100%
+app\repositories\loans.py            27      0      2      0   100%
+app\repositories\members.py          33      0      4      0   100%
+app\repositories\payments.py          9      0      0      0   100%
+app\schemas\__init__.py               0      0      0      0   100%
+app\schemas\analytics.py            209      0      0      0   100%
+app\schemas\common.py                18      0      2      0   100%
+app\schemas\items.py                 37      0      2      0   100%
+app\schemas\loans.py                 40      0      0      0   100%
+app\schemas\members.py               67      0      2      0   100%
+app\seed.py                          60      0      8      0   100%
+app\serve.py                         37      1      8      2    93%   48->exit, 86
+app\services\__init__.py              0      0      0      0   100%
+app\services\analytics.py           236      0     18      0   100%
+app\services\analytics_views.py     236      0      0      0   100%
+app\services\items.py                81      0     14      0   100%
+app\services\loans.py               115      2     20      2    97%   87, 119
+app\services\members.py             113      0     22      1    99%   118->121
+app\services\support.py              59      1     14      2    96%   93, 95->98
+app\services\views.py                48      0      0      0   100%
+-----------------------------------------------------------------------------
+TOTAL                              2532     10    282     11    99%
 
 === Business-rules layer: app/domain/* and app/services/* ===
-Name                       Stmts   Miss Branch BrPart  Cover   Missing
-----------------------------------------------------------------------
-app\domain\__init__.py         0      0      0      0   100%
-app\domain\enums.py           35      0      0      0   100%
-app\domain\errors.py          15      0      0      0   100%
-app\domain\policy.py           8      0      0      0   100%
-app\domain\rules.py          111      0     38      0   100%
-app\services\__init__.py       0      0      0      0   100%
-app\services\items.py         81      0     14      0   100%
-app\services\loans.py        115      2     20      2    97%   87, 119
-app\services\members.py      113      0     22      1    99%   118->121
-app\services\support.py       59      1     14      2    96%   93, 95->98
-app\services\views.py         48      0      0      0   100%
-----------------------------------------------------------------------
-TOTAL                        585      3    108      5    99%
+Name                              Stmts   Miss Branch BrPart  Cover   Missing
+-----------------------------------------------------------------------------
+app\domain\__init__.py                0      0      0      0   100%
+app\domain\analytics.py             126      0     30      0   100%
+app\domain\enums.py                  35      0      0      0   100%
+app\domain\errors.py                 15      0      0      0   100%
+app\domain\policy.py                  8      0      0      0   100%
+app\domain\rules.py                 111      0     38      0   100%
+app\domain\utilization.py            69      0     20      0   100%
+app\services\__init__.py              0      0      0      0   100%
+app\services\analytics.py           236      0     18      0   100%
+app\services\analytics_views.py     236      0      0      0   100%
+app\services\items.py                81      0     14      0   100%
+app\services\loans.py               115      2     20      2    97%   87, 119
+app\services\members.py             113      0     22      1    99%   118->121
+app\services\support.py              59      1     14      2    96%   93, 95->98
+app\services\views.py                48      0      0      0   100%
+-----------------------------------------------------------------------------
+TOTAL                              1252      3    176      5    99%
