@@ -1,6 +1,6 @@
 Backend coverage summary (branch coverage on)
 Generated from one full run: python -m pytest -p no:cacheprovider   (from backend/, SQLite)
-Test result of that run: 1285 passed, 1 warning in 133.74s (0:02:13)
+Test result of that run: 1290 passed, 1 warning in 126.41s (0:02:06)
 Then: python -m coverage report -m   and   python -m coverage report --include="app/domain/*,app/services/*"
 
 === Overall (app/) ===
@@ -16,6 +16,7 @@ app\api\items.py                     48      0      0      0   100%
 app\api\loans.py                     10      0      0      0   100%
 app\api\members.py                   41      0      0      0   100%
 app\api\middleware.py                39      0      6      0   100%
+app\api\root.py                       5      0      0      0   100%
 app\clock.py                         16      0      2      0   100%
 app\config.py                        25      0      4      0   100%
 app\db.py                            31      3      2      0    91%   62-64
@@ -29,7 +30,7 @@ app\domain\rules.py                 111      0     38      0   100%
 app\domain\utilization.py            69      0     20      0   100%
 app\healthcheck.py                   13      1      2      1    87%   26
 app\logging_config.py                37      0     12      1    98%   48->47
-app\main.py                          35      0      4      0   100%
+app\main.py                          36      0      4      0   100%
 app\models\__init__.py                6      0      0      0   100%
 app\models\base.py                   11      0      0      0   100%
 app\models\item.py                   14      0      0      0   100%
@@ -60,7 +61,7 @@ app\services\members.py             113      0     22      1    99%   118->121
 app\services\support.py              59      1     14      2    96%   93, 95->98
 app\services\views.py                48      0      0      0   100%
 -----------------------------------------------------------------------------
-TOTAL                              2532     10    282     11    99%
+TOTAL                              2538     10    282     11    99%
 
 === Business-rules layer: app/domain/* and app/services/* ===
 Name                              Stmts   Miss Branch BrPart  Cover   Missing
